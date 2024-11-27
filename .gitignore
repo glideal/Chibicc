@@ -2,6 +2,7 @@
 *.o
 *.s
 tmp*
+run*
 a.out
 *.exe
 chibicc

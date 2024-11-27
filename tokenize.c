@@ -35,6 +35,15 @@ bool consume(char* op){
     }
 }
 
+Token*consume_ident(){
+    if(token->kind!=TK_IDENT){
+        return NULL;
+    }
+    Token*t=token;
+    token=token->next;
+    return t;
+}
+
 void expect(char* op){
     if(token->kind!=TK_RESERVED||strlen(op)!=token->len||memcmp(token->str,op,token->len)){
         error_at(token->str,"expected \"%s\"",op);
@@ -110,9 +119,14 @@ Token*tokenize(){
         cがsにあるいずれかの文字でないかをチェックしている。
         天才。
         */
-        if(strchr("+-*/()<>;",*p)){
+        if(strchr("+-*/()<>;=",*p)){
             cur=new_token(TK_RESERVED,cur,p,1);
             p++;
+            continue;
+        }
+
+        if('a'<=*p&&*p<='z'){
+            cur=new_token(TK_IDENT,cur,p++,1);
             continue;
         }
         
