@@ -2,11 +2,16 @@
 
 
 void gen(Node*node){
-    if(node->kind==ND_NUM){
-        printf("  push %d\n",node->val);
-        return;
+    switch(node->kind){
+        case ND_NUM:
+            printf("  push %d\n",node->val);
+            return; 
+        case ND_RETURN:
+            gen(node->lhs);
+            printf("  pop rax\n");
+            printf("  ret\n");
+            return;
     }
-
     gen(node->lhs);
     gen(node->rhs);
 
@@ -75,7 +80,7 @@ void codegen(Node*node){
         gen(n);
         printf("  pop rax\n");
     }
-    
+
     printf("  ret\n");
     printf(".section .note.GNU-stack,\"\",@progbits\n");
 

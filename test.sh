@@ -47,4 +47,6 @@ assert 0 '1>=2;'
 
 assert 3 '1; 2; 3;'
 
+assert 21 'return 5+20-4;'
+
 echo OK
