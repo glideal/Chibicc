@@ -1,14 +1,17 @@
 CC=gcc
-CFLAGS=-std=c11 -g -static -Wa,-mnoexecstack
-LDFLGAS=-Wl.-z.noexecstack
+CFLAGS=-std=c11 -g -static -Wa,-noexecstack
+SRCS=$(wildcard *.c)
 
-chibicc: main.c
-	$(CC) -o $@ $? $(LDFLAGS)
+
+chibicc: $(SRCS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(SRCS):chibicc.h
 
 test: chibicc
 	./test.sh
 
 clean:
-	rm -f chibicc *.o *~ tmp*
+	rm -f *.o *~ tmp*
 
 .PHONY: test clean
