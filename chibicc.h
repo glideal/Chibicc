@@ -5,6 +5,7 @@
 #include<stdbool.h>
 #include<string.h>
 
+
 //
 //tokenize.c
 //
@@ -27,6 +28,7 @@ struct Token{
 
 void error(char*fmt,...);
 void error_at(char*loc,char*fmt,...);
+char*strn_dup(char*p,int len);
 bool consume(char*op);
 Token*consume_ident();
 void expect(char*op);
@@ -42,6 +44,13 @@ extern Token*token;
 //parse.c
 //
 
+typedef struct Var Var;
+struct Var{
+    Var*next;
+    char*name;
+    int offset;
+};
+
 typedef enum{
     ND_ADD,
     ND_SUB,
@@ -54,7 +63,7 @@ typedef enum{
     ND_ASSIGN,
     ND_RETURN,
     ND_EXPR_STMT,
-    ND_LVAR,//local variable
+    ND_VAR,//local variable
     ND_NUM,
 }NodeKind;
 
@@ -64,14 +73,20 @@ struct Node{
     Node*next;
     Node*lhs;
     Node*rhs;
-    char name;
+    Var*var;
     int val;
 };
 
-Node*program();
+typedef struct{
+    Node*node;
+    Var*locals;
+    int stack_size;
+}Program;
+
+Program*program();
 
 //
 //codegen.c
 //
 
-void codegen(Node*node);
+void codegen(Program*prog);

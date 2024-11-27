@@ -26,6 +26,13 @@ void error_at(char*loc,char*fmt,...){
     exit(1);
 }
 
+char*strn_dup(char*p,int len){
+    char*buf=calloc(len+1,sizeof(char*));//buf[0]~buf[len]
+    strncpy(buf,p,len);//copy
+    buf[len]='\0';//NULLはポインタ、\0は値として使う。意味合いは同じ
+    return buf;
+}
+
 bool consume(char* op){
     if(token->kind!=TK_RESERVED||strlen(op)!=token->len||memcmp(token->str,op,token->len)){
         return false;
@@ -125,8 +132,13 @@ Token*tokenize(){
             continue;
         }
 
-        if('a'<=*p&&*p<='z'){
-            cur=new_token(TK_IDENT,cur,p++,1);
+        if(is_alpha(*p)){
+            char*q=p;
+            p++;
+            while(is_alnum(*p)){
+                p++;
+            }
+            cur=new_token(TK_IDENT,cur,q,p-q);
             continue;
         }
         
