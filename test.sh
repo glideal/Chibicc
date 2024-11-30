@@ -52,5 +52,10 @@ assert 3 ' 1; 2;return 3;'
 assert 3 'a=3; return a;'
 assert 8 'a=3;b=5;return a+b;'
 
+assert 3 'if(0)return 2;return 3;'
+assert 3 'if(1-1)return 2;return 3;'
+assert 2 'if(1)return 2;return 3;'
+assert 2 'if(2-1)return 2;return 3;'
+assert 3 'if(5-2>4)return 2;else return 3;'
 
 echo OK

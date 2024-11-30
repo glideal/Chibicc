@@ -1,5 +1,7 @@
 #include"chibicc.h"
 
+int labelseq=0;
+
 void gen_addr(Node*node){
     if(node->kind==ND_VAR){
         printf("  lea rax, [rbp-%d]\n",node->var->offset);
@@ -51,6 +53,33 @@ void gen(Node*node){
             gen(node->rhs);
             store();
             return;
+        case ND_IF:{
+            int seq=labelseq;
+            labelseq++;
+            if(node->els){
+                gen(node->cond);
+                printf("  pop rax\n");
+                printf("  cmp rax, 0\n");
+                /*
+                je .L0
+                ゼロフラグが1だったらジャンプ
+                */
+                printf("  je  .Lelse%d\n",seq);
+                gen(node->then);
+                printf("  jmp  .Lend%d\n",seq);
+                printf(".Lelse%d:\n",seq);
+                gen(node->els);
+                printf(".Lend%d:\n",seq);
+            }else{
+                gen(node->cond);
+                printf("  pop rax\n");
+                printf("  cmp rax, 0\n");
+                printf("  je  .Lend%d\n",seq);
+                gen(node->then);
+                printf(".Lend%d:\n",seq);
+            }
+            return;
+        }
         case ND_RETURN:
             gen(node->lhs);
             printf("  pop rax\n");
@@ -86,6 +115,10 @@ void gen(Node*node){
             printf("  idiv rdi\n");
             break;
         case ND_EQ:
+            /*
+            cmp　rax, rdiはフラグだけを更新するsub 命令と一緒だが、
+            cmpと違い、subはraxにrax-rdiを代入する
+            */
             printf("  cmp rax, rdi\n");
             /*
             seteはcmpした二つの値が同じ値だったら、引数のレジスタに1をセット。違う値なら0をセット。

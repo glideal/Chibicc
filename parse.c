@@ -85,11 +85,24 @@ Program*program(){
 }
 
 //stmt="return" expr ";" | expr ";"
+//    |"if" "(" expr ")" stmt ("else" stmt)?
+//    | expr ";"
 Node*stmt(){
     //printf("stmt\n");
     if(consume("return")){
         Node*node=new_unary(ND_RETURN,expr());
         expect(";");
+        return node;
+    }
+    if(consume("if")){
+        Node*node=new_node(ND_IF);
+        expect("(");
+        node->cond=expr();
+        expect(")");
+        node->then=stmt();
+        if(consume("else")){
+            node->els=stmt();
+        }
         return node;
     }
     Node *node=new_unary(ND_EXPR_STMT,expr());

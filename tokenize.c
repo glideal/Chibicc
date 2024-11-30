@@ -94,6 +94,26 @@ bool is_alnum(char c){
     return is_alpha(c)||('0'<=c&&c<='9');
 }
 
+char*starts_with_reserved(char*p){
+    static char*kw[]={"return","if","else"};
+
+    for(int i=0;i<sizeof(kw)/sizeof(*kw);i++){
+        int len=strlen(kw[i]);
+        if(startswith(p,kw[i])&&!is_alnum(p[len])){
+            return kw[i];
+        }
+    }
+
+    static char*punctuator[]={"==","!=","<=",">="};
+    for(int i=0;i<sizeof(punctuator)/sizeof(*punctuator);i++){
+        if(startswith(p,punctuator[i])){
+            return punctuator[i];
+        }
+    }
+
+    return NULL;
+}
+
 Token*tokenize(){
     char*p=user_input;
     Token head;
@@ -106,18 +126,15 @@ Token*tokenize(){
             continue;
         }
 
-        //keyword
-        if(startswith(p,"return")&&!is_alnum(p[6])){
-            cur=new_token(TK_RESERVED,cur,p,6);
-            p+=6;
+        //keyword or punctuator
+        char*kw=starts_with_reserved(p);
+        if(kw){
+            int len=strlen(kw);
+            cur=new_token(TK_RESERVED,cur,p,len);
+            p+=len;
             continue;
         }
 
-        if(startswith(p,"==")||startswith(p,"!=")||startswith(p,"<=")||startswith(p,">=")){
-            cur=new_token(TK_RESERVED,cur,p,2);
-            p+=2;
-            continue;
-        }
         /*
         本来は
         strchr(const char*s,int c)
