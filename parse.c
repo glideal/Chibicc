@@ -1,10 +1,11 @@
 #include"chibicc.h"
 
 
-Var*locals;
+VarList*locals;
 
 Var*find_var(Token*tok){
-    for(Var*var=locals;var;var=var->next){
+    for(VarList*vl=locals;vl;vl=vl->next){
+        Var*var=vl->var;
         if(strlen(var->name)==tok->len
         &&!memcmp(tok->str,var->name,tok->len)){
             return var;
@@ -46,9 +47,11 @@ Node*new_var(Var*var){
 
 Var*push_var(char*name){
     Var*var=calloc(1,sizeof(Var));
-    var->next=locals;
+    VarList*vl=calloc(1,sizeof(VarList));
     var->name=name;
-    locals=var;
+    vl->var=var;
+    vl->next=locals;
+    locals=vl;
     return var;
 }
 
@@ -64,7 +67,7 @@ Node*mul();
 Node*unary();
 Node*primary();
 
-//program=function
+//program=function*
 Function*program(){
     Function head;
     head.next=NULL;
@@ -77,13 +80,36 @@ Function*program(){
     return head.next;
 }
 
+VarList*read_func_params(){
+    if(consume(")")){
+        return NULL;
+    }
+
+    VarList head;
+    head.next=NULL;
+    VarList*cur=&head;
+    cur->next=calloc(1,sizeof(VarList));
+    cur->next->var=push_var(expect_ident());
+    cur=cur->next;
+    while(!consume(")")){
+        expect(",");
+        cur->next=calloc(1,sizeof(VarList));
+        cur->next->var=push_var(expect_ident());
+        cur=cur->next;
+    }
+    return head.next;
+}
+
+//function=ident "(" params? ")" "{" stmt* "}"
+//params  =ident("," ident)*
 Function*function(){
     //printf("program\n");
     locals=NULL;
+    Function*fn=calloc(1,sizeof(Function));
+    fn->name=expect_ident();
 
-    char*name=expect_ident();
     expect("(");
-    expect(")");
+    fn->params=read_func_params();
     expect("{");
 
     Node head;
@@ -96,11 +122,9 @@ Function*function(){
     }
     //return head.next;
 
-    Function*func=calloc(1,sizeof(Function));
-    func->name=name;
-    func->node=head.next;
-    func->locals=locals;
-    return func;
+    fn->node=head.next;
+    fn->locals=locals;
+    return fn;
 }
 
 Node*read_expr_stmt(){

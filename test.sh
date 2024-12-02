@@ -25,6 +25,7 @@ assert(){
         echo "$input =>$expected expected, but got $actual"
         exit 1
     fi
+    echo "----------------------------------------------"
 }
 assert 0 'main(){return 0;}'
 assert 42 'main(){return 42;}'
@@ -106,6 +107,31 @@ ret32(){
 }
 main(){
     return 10+ret32();
+}'
+
+assert 7 '
+add2(x,y){
+    return x+y;
+}
+main(){
+    return add2(3,4);
+}'
+assert 7 '
+main(){
+    return add2(3,4);
+}
+add2(x,y){
+    return x+y;
+}'
+assert 55 '
+main(){
+    return fib(9);
+}
+fib(x){
+    if(x<=1){
+        return 1;
+    }
+    return fib(x-1)+fib(x-2);
 }'
 
 echo OK
