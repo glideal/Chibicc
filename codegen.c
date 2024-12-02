@@ -1,6 +1,7 @@
 #include"chibicc.h"
 
 int labelseq=0;
+char*funcname;
 char*argreg[]={"rdi","rsi","rdx","rcx","r8","r9"};
 
 void gen_addr(Node*node){
@@ -129,14 +130,33 @@ void gen(Node*node){
             for(int i=nargs-1;i>=0;i--){
                 printf("  pop %s\n",argreg[i]);
             }
+            int seq=labelseq;
+            labelseq++;
+            /*
+            x86-64の関数呼び出しのABI（Application Binary Interface）は、
+            関数呼び出し前にrspが16の倍数になっている必要がある。
+            しかし、rspは8bit単位で変化するので、
+            rspを一時的に16の倍数にする必要があるパターンがある。
+            */
+            printf("  mov rax, rsp\n");
+            printf("  and rax, 15\n");//下位4bitが1、その他bitが0のデータとAND
+            printf("  jnz .Lcall%d\n",seq);//jnz==jump not zero//rspが16の倍数でないならjump
+            printf("  mov rax, 0\n");
             printf("  call %s\n",node->funcname);
+            printf("  jmp .Lend%d\n",seq);
+            printf(".Lcall%d:\n",seq);
+            printf("  sub rsp, 8\n");
+            printf("  mov rax, 0\n");
+            printf("  call %s\n",node->funcname);
+            printf("  add rsp, 8\n");
+            printf(".Lend%d:\n",seq);
             printf("  push rax\n");
             return;
         }
         case ND_RETURN:
             gen(node->lhs);
             printf("  pop rax\n");
-            printf("  jmp .Lreturn\n");
+            printf("  jmp .Lreturn.%s\n",funcname);
             return;
     }
     gen(node->lhs);
@@ -202,25 +222,27 @@ void gen(Node*node){
     printf("  push rax\n");
 }
 
-void codegen(Program*prog){
+void codegen(Function*prog){
     printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
-    printf("main:\n");
+    for(Function*fn=prog;fn;fn=fn->next){
+        printf(".global %s\n",fn->name);
+        printf("%s:\n",fn->name);
+        funcname=fn->name;
 
-    //prologue
-    printf("  push rbp\n");
-    printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n",prog->stack_size);
+        //prologue
+        printf("  push rbp\n");
+        printf("  mov rbp, rsp\n");
+        printf("  sub rsp, %d\n",fn->stack_size);
 
-    for(Node*n=prog->node;n;n=n->next){
-        gen(n);
+        for(Node*n=fn->node;n;n=n->next){
+            gen(n);
+        }
+
+        //epilogue
+        printf(".Lreturn.%s:\n",funcname);
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
     }
-
-    //epilogue
-    printf(".Lreturn:\n");
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
     printf(".section .note.GNU-stack,\"\",@progbits\n");
-
 }
