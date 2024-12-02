@@ -94,6 +94,7 @@ Node*read_expr_stmt(){
 ///    |"if" "(" expr ")" stmt ("else" stmt)?
 ///    |"while" "(" expr ")" stmt
 ///    |"for" "(" expr? ";" expr? ";" expr? ")" stmt
+///    |"{" stmt* "}"
 ///    | expr ";"
 Node*stmt(){
     //printf("stmt\n");
@@ -137,6 +138,20 @@ Node*stmt(){
             expect(")");
         }
         node->then=stmt();
+        return node;
+    }
+    if(consume("{")){
+        Node head;
+        head.next=NULL;
+        Node*cur=&head;
+
+        while(!consume("}")){
+            cur->next=stmt();
+            cur=cur->next;
+        }
+
+        Node*node=new_node(ND_BLOCK);
+        node->body=head.next;
         return node;
     }
     Node *node=read_expr_stmt();

@@ -63,4 +63,16 @@ assert 10 ' i=0;while(i<10) i=i+1; return i;'
 assert 3 'for(;;) return 3;return 5;'
 assert 10 'for(i=0;i<10;i=i+1)1;return i;'
 
+assert 17 '
+j=0;
+for(i=0;i<10;i=i+1){
+    if(i>6){
+        j=j+2;
+        if(j==4){
+            j=j+1;
+        }
+    }
+}
+return i+j;'
+
 echo OK
