@@ -69,6 +69,25 @@ assert 2 'main(){if(1)return 2;return 3;}'
 assert 2 'main(){if(2-1)return 2;return 3;}'
 assert 3 'main(){if(5-2>4)return 2;else return 3;}'
 
+assert 5 '
+main(){
+    a=0;
+    if(a=1){
+        return 5;
+    }else{
+        return 0;
+    }
+}'
+assert 0 '
+main(){
+    a=0;
+    if(a){
+        return 5;
+    }else{
+        return 0;
+    }
+}'
+
 assert 10 ' main(){i=0;while(i<10) i=i+1; return i;}'
 
 assert 3 'main(){for(;;) return 3;return 5;}'

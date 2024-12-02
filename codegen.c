@@ -18,7 +18,7 @@ void gen_addr(Node*node){
         printf("  push rax\n");
         return;
     }
-    error("not a local value");
+    error_tok(node->tok,"not a local value");
 }
 
 void load(){

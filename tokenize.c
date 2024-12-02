@@ -12,11 +12,9 @@ void error(char*fmt,...){
     exit(1);
 }
 
-void error_at(char*loc,char*fmt,...){
-    va_list ap;
-    va_start(ap,fmt);
-
+void verror_at(char*loc,char*fmt,va_list ap){
     int pos=loc-user_input;
+    
     fprintf(stderr,"%s\n",user_input);
     fprintf(stderr,"%*s",pos,"");
     fprintf(stderr,"^ ");
@@ -26,6 +24,25 @@ void error_at(char*loc,char*fmt,...){
     exit(1);
 }
 
+void error_at(char*loc,char*fmt,...){
+    va_list ap;
+    va_start(ap,fmt);
+
+    verror_at(loc,fmt,ap);
+}
+
+void error_tok(Token*tok,char*fmt,...){
+    va_list ap;
+    va_start(ap,fmt);
+    if(tok){
+        verror_at(tok->str,fmt,ap);
+    }else{
+        vfprintf(stderr,fmt,ap);
+        fprintf(stderr,"\n");
+        exit(1);
+    }
+}
+
 char*strn_dup(char*p,int len){
     char*buf=calloc(len+1,sizeof(char*));//buf[0]~buf[len]
     strncpy(buf,p,len);//copy
@@ -33,12 +50,13 @@ char*strn_dup(char*p,int len){
     return buf;
 }
 
-bool consume(char* op){
+Token*consume(char* op){
     if(token->kind!=TK_RESERVED||strlen(op)!=token->len||memcmp(token->str,op,token->len)){
-        return false;
+        return NULL;
     }else{
+        Token*t=token;
         token=token->next;
-        return true;
+        return t;
     }
 }
 
@@ -53,7 +71,7 @@ Token*consume_ident(){
 
 void expect(char* op){
     if(token->kind!=TK_RESERVED||strlen(op)!=token->len||memcmp(token->str,op,token->len)){
-        error_at(token->str,"expected \"%s\"",op);
+        error_tok(token,"expected \"%s\"",op);
     }
 
     token=token->next;
@@ -61,7 +79,7 @@ void expect(char* op){
 
 int expect_number(){
     if(token->kind!=TK_NUM){
-        error_at(token->str,"expected a number");
+        error_tok(token,"expected a number");
     }
 
     int val=token->val;
@@ -71,7 +89,7 @@ int expect_number(){
 
 char*expect_ident(){
     if(token->kind!=TK_IDENT){
-        error_at(token->str,"expected an identifier");
+        error_tok(token,"expected an identifier");
     }
     char*s=strn_dup(token->str,token->len);
     token=token->next;
