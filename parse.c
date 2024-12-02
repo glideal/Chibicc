@@ -251,8 +251,24 @@ Node*unary(){
     return primary();
 }
 
-//primary="(" expr ")" | ident args? | num
-//arg="("")"
+//func-args="("(assign (","assign)*)? ")"
+Node*func_args(){
+    if(consume(")")){
+        return NULL;
+    }
+    Node head;
+    head.next=NULL;
+    Node*cur=&head;
+    cur->next=assign();
+    cur=cur->next;
+    while(!consume(")")){
+        expect(",");
+        cur->next=assign();
+        cur=cur->next;
+    }
+    return head.next;   
+}
+//primary="(" expr ")" | ident func-args? | num
 Node*primary(){
     //printf("primary\n");
     if(consume("(")){
@@ -263,9 +279,9 @@ Node*primary(){
     Token*tok=consume_ident();
     if(tok){
         if(consume("(")){
-            expect(")");
             Node*node=new_node(ND_FUNCALL);
             node->funcname=strn_dup(tok->str,tok->len);
+            node->args=func_args();
             return node;
         }
         Var*var=find_var(tok);
