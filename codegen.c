@@ -4,19 +4,25 @@ int labelseq=0;
 char*funcname;
 char*argreg[]={"rdi","rsi","rdx","rcx","r8","r9"};
 
-void gen_addr(Node*node){
-    if(node->kind==ND_VAR){
-        printf("  lea rax, [rbp-%d]\n",node->var->offset);
-        /*
-        lea rax, [rbp-%d]
-        は
+void gen(Node*node);
 
-        mov rax, rbp
-        sub rax, %d
-        と同じ
-        */
-        printf("  push rax\n");
-        return;
+void gen_addr(Node*node){
+    switch(node->kind){
+        case ND_VAR:
+            printf("  lea rax, [rbp-%d]\n",node->var->offset);
+            /*
+            lea rax, [rbp-%d]
+            は
+
+            mov rax, rbp
+            sub rax, %d
+            と同じ
+            */
+            printf("  push rax\n");
+            return;
+        case ND_DEREF:
+            gen(node->lhs);
+            return;
     }
     error_tok(node->tok,"not a local value");
 }
@@ -54,6 +60,13 @@ void gen(Node*node){
             gen_addr(node->lhs);
             gen(node->rhs);
             store();
+            return;
+        case ND_ADDR:
+            gen_addr(node->lhs);
+            return;
+        case ND_DEREF:
+            gen(node->lhs);
+            load();
             return;
         case ND_IF:{
             int seq=labelseq;
@@ -167,9 +180,15 @@ void gen(Node*node){
 
     switch(node->kind){
         case ND_ADD:
+            if(node->ty->kind==TY_PTR){
+                printf("  imul rdi, 8\n");
+            }
             printf("  add rax, rdi\n");
             break;
         case ND_SUB:
+            if(node->ty->kind==TY_PTR){
+                printf("  imul rdi, 8\n");
+            }
             printf("  sub rax, rdi\n");
             break;
         case ND_MUL:
@@ -242,6 +261,7 @@ void codegen(Function*prog){
             i++;
         }
 
+        //{...}
         for(Node*n=fn->node;n;n=n->next){
             gen(n);
         }

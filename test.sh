@@ -153,4 +153,19 @@ fib(x){
     return fib(x-1)+fib(x-2);
 }'
 
+assert 5 '
+main(){
+    x=3;
+    y=5;
+    return *(&x+1);
+}'
+
+assert 7 '
+main(){
+    x=3;
+    y=5;
+    *(&x+1)=7;
+    return y;
+}'
+
 echo OK

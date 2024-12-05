@@ -11,6 +11,7 @@ int main(int argc, char **argv){
     //printf("tokenizer:ok\n");
     Function*prog=program();
     //printf("parser:ok\n");
+    add_type(prog);
 
     //Assign offsets to local variables.
     for(Function*fn=prog;fn;fn=fn->next){

@@ -6,6 +6,9 @@
 #include<string.h>
 
 
+typedef struct Type Type;
+
+
 //
 //tokenize.c
 //
@@ -21,6 +24,7 @@ typedef struct Token Token;
 struct Token{
     TokenKind kind;
     Token*next;
+    Type*ty;
     int val;
     char*str;
     int len;
@@ -67,6 +71,8 @@ typedef enum{
     ND_LT,//<
     ND_LE,//<=
     ND_ASSIGN,
+    ND_ADDR,//&
+    ND_DEREF,//*
     ND_RETURN,
     ND_IF,
     ND_WHILE,
@@ -82,6 +88,7 @@ typedef struct Node Node;
 struct Node{
     NodeKind kind;
     Node*next;
+    Type*ty;
     Token*tok;
 
     Node*lhs;
@@ -117,6 +124,19 @@ struct Function{
 };
 
 Function*program();
+
+//
+// typing.c
+//
+
+typedef enum{TY_INT,TY_PTR}TypeKind;
+
+struct Type{
+    TypeKind kind;
+    Type*base;
+};
+
+void add_type(Function*prog);
 
 //
 //codegen.c
