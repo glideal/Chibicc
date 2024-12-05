@@ -170,4 +170,13 @@ int main(){
     return y;
 }'
 
+assert 5 '
+int main(){
+    int*p;
+    int a=2;
+    int b=5;
+    p=&a;
+    return *(p+1);
+}'
+
 echo OK
