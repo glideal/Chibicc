@@ -34,7 +34,8 @@ void error(char*fmt,...);
 void error_at(char*loc,char*fmt,...);
 char*strn_dup(char*p,int len);
 void error_tok(Token*tok,char*fmt,...);
-Token*consume(char*op);
+Token*peek(char*s);
+Token*consume(char*s);
 Token*consume_ident();
 void expect(char*op);
 int expect_number();
@@ -53,6 +54,7 @@ extern Token*token;
 typedef struct Var Var;
 struct Var{
     char*name;
+    Type*ty;
     int offset;
 };
 typedef struct VarList VarList;
@@ -82,6 +84,7 @@ typedef enum{
     ND_EXPR_STMT,
     ND_VAR,//local variable
     ND_NUM,
+    ND_NULL
 }NodeKind;
 
 typedef struct Node Node;
@@ -135,6 +138,9 @@ struct Type{
     TypeKind kind;
     Type*base;
 };
+
+Type*int_type();
+Type*pointer_to(Type*base);
 
 void add_type(Function*prog);
 

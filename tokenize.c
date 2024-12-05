@@ -50,8 +50,16 @@ char*strn_dup(char*p,int len){
     return buf;
 }
 
-Token*consume(char* op){
-    if(token->kind!=TK_RESERVED||strlen(op)!=token->len||memcmp(token->str,op,token->len)){
+Token*peek(char*s){
+    if(token->kind!=TK_RESERVED||strlen(s)!=token->len||memcmp(token->str,s,token->len)){
+        return NULL;
+    }
+    return token;
+}
+
+
+Token*consume(char* s){
+    if(!peek(s)){
         return NULL;
     }else{
         Token*t=token;
@@ -69,9 +77,9 @@ Token*consume_ident(){
     return t;
 }
 
-void expect(char* op){
-    if(token->kind!=TK_RESERVED||strlen(op)!=token->len||memcmp(token->str,op,token->len)){
-        error_tok(token,"expected \"%s\"",op);
+void expect(char* s){
+    if(!peek(s)){
+        error_tok(token,"expected \"%s\"",s);
     }
 
     token=token->next;
@@ -122,7 +130,7 @@ bool is_alnum(char c){
 }
 
 char*starts_with_reserved(char*p){
-    static char*kw[]={"return","if","else","while","for"};
+    static char*kw[]={"return","if","else","while","for","int"};
 
     for(int i=0;i<sizeof(kw)/sizeof(*kw);i++){
         int len=strlen(kw[i]);
