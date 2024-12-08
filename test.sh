@@ -179,4 +179,52 @@ int main(){
     return *(p+1);
 }'
 
+# #文法上はあってる？
+# assert 4 '
+# int main(){
+#     int p=5;
+#     return &(*p);
+# }'
+
+assert 3 '
+int main(){
+    int x[2];
+    int *y=&x;
+    *y=3;
+    return *x;
+}'
+
+assert 4 '
+int main(){
+    int x[3];
+    *x=3;
+    *(x+1)=4;
+    *(x+2)=5;
+    return *(x+1);
+}'
+
+assert 1 '
+int main(){
+    int x[2][3];
+    int *y=x;
+    *(y+1)=1;
+    return *(*x+1);
+}'
+
+assert 4 '
+int main(){
+    int x[2][3];
+    int *y=x;
+    *(y+4)=4;
+    return *(*(x+1)+1);
+}'
+
+assert 6 '
+int main(){
+    int x[2][3];
+    int *y=x;
+    *(y+6)=6;
+    return **(x+2);
+}'
+
 echo OK

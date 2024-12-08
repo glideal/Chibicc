@@ -133,7 +133,12 @@ Function*program();
 // typing.c
 //
 
-typedef enum{TY_INT,TY_PTR,TY_ARRAY}TypeKind;
+typedef enum{
+    TY_INT,
+
+    TY_PTR,
+    TY_ARRAY
+}TypeKind;
 
 struct Type{
     TypeKind kind;
