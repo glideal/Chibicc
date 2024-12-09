@@ -94,7 +94,12 @@ void visit(Node*node){
             if(!node->lhs->ty->base){
                 error_tok(node->tok,"invailed pointer dereference");
             }
-            node->ty=node->lhs->ty->base;
+            node->ty=node->lhs->ty->base;//(Type*)ty //(Type*)base
+            return;
+        case ND_SIZEOF:
+            node->kind=ND_NUM;
+            node->ty=int_type();
+            node->val=size_of(node->lhs->ty);
             return;
     }
     

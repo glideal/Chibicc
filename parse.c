@@ -395,16 +395,19 @@ Node*func_args(){
     }
     return head.next;   
 }
-//primary="(" expr ")" | ident func-args? | num
+//primary="(" expr ")" | "sizeof" unary | ident func-args? | num
 Node*primary(){
     //printf("primary\n");
+    Token*tok;
     if(consume("(")){
         Node*node=expr();
         expect(")");
         return node;
     }
-    Token*tok=consume_ident();
-    if(tok){
+    if(tok=consume("sizeof")){
+        return new_unary(ND_SIZEOF,unary(),tok);
+    }
+    if(tok=consume_ident()){
         if(consume("(")){
             Node*node=new_node(ND_FUNCALL,tok);
             node->funcname=strn_dup(tok->str,tok->len);
