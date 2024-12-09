@@ -77,6 +77,8 @@ void gen(Node*node){
             return;
         case ND_DEREF:
             gen(node->lhs);
+            //c言語の仕様。
+            //配列を返り値にすると曽於配列の先頭を指すアドレスを返す
             if(node->ty->kind!=TY_ARRAY){
                 load();
             }

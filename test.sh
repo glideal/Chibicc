@@ -179,6 +179,17 @@ int main(){
     return *(p+1);
 }'
 
+# #文法上はいいけど
+# #node->stack_sizeで表されるメモリ領域以上のメモリ領域を使うことになるので
+# #長いc言語コードを書いていたらどこかで意図しないメモリ参照が生まれるはず。
+# assert 4 '
+# int main(){
+#     int*x;
+#     *(x+2)=4;
+#     return *(x+2);
+# }'
+
+
 # #文法上はあってる？
 # assert 4 '
 # int main(){
@@ -226,5 +237,41 @@ int main(){
     *(y+6)=6;
     return **(x+2);
 }'
+
+assert 3 '
+int main(){
+    int x[3];
+    x[0]=2;
+    x[1]=3;
+    x[2]=4;
+    return *(x+1);
+}'
+
+assert 4 '
+int main(){
+    int x[3];
+    x[0]=2;
+    x[1]=3;
+    x[2]=4;
+    return x[2];
+}'
+
+#x[0][1]=*(*(x+0)+1)
+
+# x[0][0]=*y=y[0]
+# x[0][1]
+# x[0][2]
+# x[1][0]=*(y+3)=y[3]
+# x[1][1]
+# x[1][2]
+assert 5 '
+int main(){
+    int x[2][3];
+    int *y=x;
+    y[4]=5;
+    return x[1][1];
+}'
+
+
 
 echo OK
