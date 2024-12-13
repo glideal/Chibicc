@@ -15,7 +15,7 @@ assert(){
 
     ./chibicc "$input" > tmp.s
 
-    gcc -static -o tmp tmp.s tmp2.o
+    cc -g -static -o tmp tmp.s tmp2.o
     ./tmp
     actual="$?"
 
@@ -320,5 +320,26 @@ int main(){
     return sizeof (**x+1);
 }'
 
+assert 0 '
+int x;
+int main(){
+    return x;
+}'
+
+assert 2 '
+int x[4];
+int main(){
+    x[0]=0;
+    x[1]=1;
+    x[2]=2;
+    x[3]=3;
+    return x[2];
+}'
+
+assert 8 '
+int x;
+int main(){
+    return sizeof x;
+}'
 
 echo OK

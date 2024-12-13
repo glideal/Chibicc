@@ -9,12 +9,12 @@ int main(int argc, char **argv){
     user_input=argv[1];
     token=tokenize();
     //printf("tokenizer:ok\n");
-    Function*prog=program();
+    Program*prog=program();
     //printf("parser:ok\n");
     add_type(prog);
 
     //Assign offsets to local variables.
-    for(Function*fn=prog;fn;fn=fn->next){
+    for(Function*fn=prog->fns;fn;fn=fn->next){
         int offset=0;
         for(VarList*vl=fn->locals;vl;vl=vl->next){
             Var*var=vl->var;
