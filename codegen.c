@@ -2,7 +2,8 @@
 
 int labelseq=0;
 char*funcname;
-char*argreg[]={"rdi","rsi","rdx","rcx","r8","r9"};
+char*argreg1[]={"dil","sil","dl","cl","r8b","r9b"};
+char*argreg8[]={"rdi","rsi","rdx","rcx","r8","r9"};
 
 void gen(Node*node);
 
@@ -28,6 +29,8 @@ void gen_addr(Node*node){
                 push命令は(x64アーキテクチャにおいて)64bitの値をスタックにプッシュすることを期待するが
                 .dataセクションにある、グローバル変数は32bitとして扱われることもあり、
                 このサイズの不一致がエラーを起こしたと考えられる
+
+                x64アーキテクチャでは下位32bitをロードすると上位32bitは自動的に0にリセットされる。
                 */
                 printf("  mov rax, offset %s\n",var->name);
                 printf("  push rax\n");
@@ -48,19 +51,32 @@ void gen_lval(Node*node){
     gen_addr(node);
 }
 
-void load(){
+void load(Type*ty){
     printf("  pop rax\n");
-    /*mov dst, [src]
-    「srcレジスタの値をアドレスとみなしてそこから値をロードしdstに保存する」
-    */
-    printf("  mov rax, [rax]\n");
+    if(size_of(ty)==1){
+        /*
+        raxのさすアドレスから1byteを読み取り、raxに格納。
+
+        movsx
+        */
+        printf("  movsx rax, byte ptr [rax]\n");
+    }else{
+        /*mov dst, [src]
+        「srcレジスタの値をアドレスとみなしてそこから値をロードしdstに保存する」
+        */
+        printf("  mov rax, [rax]\n");
+    }
     printf("  push rax\n");
 }
 
-void store(){
+void store(Type*ty){
     printf("  pop rdi\n");
     printf("  pop rax\n");
-    printf("  mov [rax], rdi\n");
+    if(size_of(ty)==1){
+        printf("  mov [rax], dil\n");
+    }else{
+        printf("  mov [rax], rdi\n");
+    }
     printf("  push rdi\n");
 }
 
@@ -78,13 +94,13 @@ void gen(Node*node){
         case ND_VAR:
             gen_addr(node);
             if(node->ty->kind!=TY_ARRAY){
-                load();
+                load(node->ty);
             }
             return;
         case ND_ASSIGN:
             gen_lval(node->lhs);
             gen(node->rhs);
-            store();
+            store(node->ty);
             return;
         case ND_ADDR:
             gen_addr(node->lhs);
@@ -94,7 +110,7 @@ void gen(Node*node){
             //c言語の仕様。
             //配列を返り値にすると曽於配列の先頭を指すアドレスを返す
             if(node->ty->kind!=TY_ARRAY){
-                load();
+                load(node->ty);
             }
             return;
         case ND_IF:{
@@ -170,7 +186,7 @@ void gen(Node*node){
                 nargs++;
             }
             for(int i=nargs-1;i>=0;i--){
-                printf("  pop %s\n",argreg[i]);
+                printf("  pop %s\n",argreg8[i]);
             }
             int seq=labelseq;
             labelseq++;
@@ -254,6 +270,8 @@ void gen(Node*node){
             printf("  cmp rax, rdi\n");
             printf("  setne al\n");//sete=set not equal
             printf("  movzb rax, al\n");
+            //movzbをmovzx(Mov with Zero eXtension)にしてもokだった。
+            //というか、そっちのほうが一般的？
             break;
         case ND_LT:
             printf("  cmp rax, rdi\n");
@@ -268,6 +286,16 @@ void gen(Node*node){
     }
 
     printf("  push rax\n");
+}
+
+void load_arg(Var*var, int idx){
+    int sz=size_of(var->ty);
+    if(sz==1){
+        printf("  mov [rbp-%d], %s\n",var->offset,argreg1[idx]);
+    }else{
+        assert(sz==8);
+        printf("  mov [rbp-%d], %s\n",var->offset,argreg8[idx]);
+    }
 }
 
 void emit_data(Program*prog){
@@ -294,9 +322,8 @@ void emit_text(Program*prog){
 
         //push argument to the stack when calling function
         int i=0;
-        for(VarList*vl=fn->params; vl;vl=vl->next){
-            Var*var=vl->var;
-            printf("  mov [rbp-%d], %s\n",var->offset,argreg[i]);
+        for(VarList*vl=fn->params;vl;vl=vl->next){
+            load_arg(vl->var,i);
             i++;
         }
 

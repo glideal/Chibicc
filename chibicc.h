@@ -158,6 +158,7 @@ a[3]がコンパイルできるのは
 配列をポインタに型変換するということを行わなければなりません
 */
 typedef enum{
+    TY_CHAR,
     TY_INT,
 
     TY_PTR,
@@ -174,6 +175,7 @@ struct Type{
     int array_size;
 };
 
+Type*char_type();
 Type*int_type();
 Type*pointer_to(Type*base);
 Type*array_of(Type*base,int size);

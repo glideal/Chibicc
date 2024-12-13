@@ -342,4 +342,24 @@ int main(){
     return sizeof x;
 }'
 
+assert 1 '
+int main(){
+    char x=1;
+    return x;
+}'
+
+assert 10 '
+int main(){
+    char x[10];
+    return sizeof(x);
+}'
+
+assert 3 '
+int main(){
+    return sub_char(10,5,2);
+}
+int sub_char(char a,char b,char c){
+    return a-b-c;
+}'
+
 echo OK
