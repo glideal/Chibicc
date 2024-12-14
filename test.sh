@@ -362,4 +362,14 @@ int sub_char(char a,char b,char c){
     return a-b-c;
 }'
 
+assert 98 '
+int main(){
+    return "abc"[1];
+}'
+
+assert 3 '
+int main(){
+    return *("d")-*("a");
+}'
+
 echo OK

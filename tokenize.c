@@ -193,8 +193,31 @@ Token*tokenize(){
             cur=new_token(TK_IDENT,cur,q,p-q);
             continue;
         }
+
+        //string literal
+        if(*p=='"'){
+            char*q=p;
+            p++;
+            while(*p&&*p!='"'){
+                p++;
+            }
+            if(!*p){
+                error_at(q,"unclosed string literal");
+            }
+            p++;
+    
+            cur=new_token(TK_STR,cur,q,p-q);
+            cur->contents=strn_dup(q+1,p-q-2);
+            cur->cont_len=p-q-1;
+            /*
+            cur->len is the length of ("litteral") includiing '"'
+            cur->contents is (literal) not including '"'
+            cur->cont_len is the length of (literal) not including '"'
+            */
+            continue;
+        }
         
-        if(isdigit(p[0])){
+        if(isdigit(*p)){
             cur=new_token(TK_NUM,cur,p,0);
             char*q=p;
             cur->val=strtol(p,&p,10);
