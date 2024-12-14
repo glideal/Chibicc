@@ -249,6 +249,7 @@ Token*tokenize(){
         }
 
         //string literal
+        //ascii start SP(32) and end DEL(127)
         if(*p=='"'){
             cur=read_string_literal(cur,p);
             p+=cur->len;

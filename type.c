@@ -112,6 +112,14 @@ void visit(Node*node){
             node->kind=ND_NUM;
             node->ty=int_type();
             node->val=size_of(node->lhs->ty);
+            node->lhs=NULL;//忘れてた
+            return;
+        case ND_STMT_EXPR:
+            Node*last=node->body;
+            while(last->next){
+                last=last->next;
+            }
+            node->ty=last->ty;
             return;
     }
     

@@ -439,6 +439,39 @@ Node*postfix(){
     return node;
 }
 
+//stmt-expr="(" "{" stmt stmt* "}" ")"
+//
+//Statement expression is a GNU C extension
+//
+//GNU is an abbreviationfor GNU's Not UNIX
+//GNU is general term for free software 
+//aimed at Unix-compatible system that is not UNIX
+Node*stmt_expr(Token*tok){
+    Node*node=new_node(ND_STMT_EXPR,tok);
+    node->body=stmt();
+    Node*cur=node->body;
+
+    while(!consume("}")){
+        cur->next=stmt();
+        cur=cur->next;
+    }
+    expect(")");
+
+    if(cur->kind!=ND_EXPR_STMT){
+        error_tok(cur->tok,"stmt expr returning void is not supported");
+    }
+    *cur=*cur->lhs;
+    /*
+    stmt-expr="(" "{" stmt stmt* "}" ")"のstmtは
+    すべてnode->ty=ND_EXPR_STMT
+    node->lhs=unary()である。
+    stmt-expr="(" "{" stmt stmt* "}" ")"のstmtのうち、
+    一番最後のstmtだけ,ND_STMT_EXPRを挟まず,直でnode->lhsを持ってきている。
+    なんで？？
+    */
+    return node;
+}
+
 //func-args="("(assign (","assign)*)? ")"
 Node*func_args(){
     if(consume(")")){
@@ -456,12 +489,16 @@ Node*func_args(){
     }
     return head.next;   
 }
-//primary="(" expr ")" | "sizeof" unary | ident func-args? |
-//         str | num 
+//primary= "(" expr "{" stmt-expr-tail
+//         | "(" expr ")" | "sizeof" unary | ident func-args? 
+//         | str | num 
 Node*primary(){
     //printf("primary\n");
     Token*tok;
-    if(consume("(")){
+    if(tok=consume("(")){
+        if(consume("{")){
+            return stmt_expr(tok);
+        }
         Node*node=expr();
         expect(")");
         return node;

@@ -93,6 +93,7 @@ typedef enum{
     ND_BLOCK,//{...}
     ND_FUNCALL,
     ND_EXPR_STMT,
+    ND_STMT_EXPR,
     ND_VAR,//local variable
     ND_NUM,
     ND_NULL
@@ -114,7 +115,7 @@ struct Node{
     //"for" statement
     Node*init;
     Node*inc;
-    //block
+    //block or statement expression
     Node*body;
 
     //function call
