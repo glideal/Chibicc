@@ -42,7 +42,7 @@ void verror_at(char*loc,char*fmt,va_list ap){
 
     /dev/fd/63:5:         retrn 5;
                           ^ undefined variable
-                          
+
     */
     int pos=loc-line+indent;
 
@@ -242,6 +242,25 @@ Token*tokenize(){
     while(*p){
         if(isspace(*p)){
             p++;
+            continue;
+        }
+
+        //skip line comments
+        if(startswith(p,"//")){
+            p++;
+            while(*p!='\n'){
+                p++;
+            }
+            continue;
+        }
+
+        //skip block comments
+        if(startswith(p,"/*")){
+            char*q=strstr(p+2,"*/");
+            if(!q){
+                error_at(p,"unclosed block comments");
+            }
+            p=q+2;
             continue;
         }
 
