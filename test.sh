@@ -13,7 +13,7 @@ assert(){
     expected="$1"
     input="$2"
 
-    ./chibicc "$input" > tmp.s
+    ./chibicc <(echo "$input") > tmp.s
 
     cc -g -static -o tmp tmp.s tmp2.o
     ./tmp

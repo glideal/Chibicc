@@ -1,5 +1,27 @@
 #include"chibicc.h"
 
+
+char*read_file(char*path){
+    //open and read file
+    FILE*fp=fopen(path,"r");
+    if(!fp){
+        error("cannot open %s: %s",path,strerror(errno));
+    }
+    int filemax=10*1024*1024;
+    char*buf=malloc(filemax);
+    int size=fread(buf,sizeof(char),filemax-2,fp);
+    if(!feof(fp)){
+        error("%s: file too large");
+    }
+
+    //make sure that the string ends with "\n\0"
+    if(size==0||buf[size-1]!='\n'){
+        buf[size]='\n';
+        size++;
+    }
+    buf[size]='\0';
+    return buf;
+}
 /*
 align(64+1,8)の場合を考える
 n    =65  =0b01000001
@@ -15,7 +37,7 @@ bはn+align-1のxbit目より上位のbitを反映させるためのもの。
 また、n+align-1はalign-1が(下位3bit)111なのでnの下位3bitいずれかが1だった時に
 4bit目(8)に繰り上げる。
 
-まとめるとalign_toはalignの倍数のうち、n以上のものを返す関数。
+まとめるとalign_toはalignの倍数のうち、n以上のものの中で最小の数を返す関数。
 ただし、alignは2のべき乗
 */
 int align_to(int n,int align){
@@ -28,7 +50,8 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    user_input=argv[1];
+    filename=argv[1];
+    user_input=read_file(argv[1]);
     token=tokenize();
     //printf("tokenizer:ok\n");
     Program*prog=program();

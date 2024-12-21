@@ -1,5 +1,6 @@
 #include"chibicc.h"
 
+char*filename;
 char*user_input;
 
 Token *token;//current token
@@ -13,9 +14,38 @@ void error(char*fmt,...){
 }
 
 void verror_at(char*loc,char*fmt,va_list ap){
-    int pos=loc-user_input;
-    
-    fprintf(stderr,"%s\n",user_input);
+    //find a line contatining 'loc'
+    char*line=loc;
+    while(user_input<line&&line[-1]!='\n'){
+        line--;
+    }
+    char*end=loc;
+    while(*end!='\n'){
+        end++;
+    }
+
+    //get a line number
+    int line_num=1;
+    for(char*p=user_input;p<line;p++){
+        if(*p=='\n'){
+            line_num++;
+        }
+    }
+
+    //print out the line
+    int indent=fprintf(stderr,"%s:%d: ",filename,line_num);
+    fprintf(stderr,"%.*s\n",(int)(end-line),line);
+
+    //show the error message
+    /*
+    like this
+
+    /dev/fd/63:5:         retrn 5;
+                          ^ undefined variable
+                          
+    */
+    int pos=loc-line+indent;
+
     fprintf(stderr,"%*s",pos,"");
     fprintf(stderr,"^ ");
     vfprintf(stderr,fmt,ap);
