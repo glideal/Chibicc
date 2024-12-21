@@ -20,6 +20,7 @@ char*read_file(char*path){
         size++;
     }
     buf[size]='\0';
+    fclose(fp);
     return buf;
 }
 /*
