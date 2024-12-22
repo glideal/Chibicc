@@ -407,6 +407,7 @@ int main(){
 assert 2 'int main(){int x=2;{int x=5;}return x;}'
 assert 5 'int main(){int x=2;{x=5;}return x;}'
 
+assert 2 'int main(){int x=2; return x;}'
 
 
 echo OK

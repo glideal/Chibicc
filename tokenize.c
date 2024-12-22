@@ -160,7 +160,7 @@ bool is_alnum(char c){
 }
 
 char*starts_with_reserved(char*p){
-    static char*kw[]={"return","if","else","while","for","int","char","sizeof"};
+    static char*kw[]={"return","if","else","while","for","int","char","sizeof","struct"};
 
     for(int i=0;i<sizeof(kw)/sizeof(*kw);i++){
         int len=strlen(kw[i]);
@@ -281,7 +281,7 @@ Token*tokenize(){
         cがsにあるいずれかの文字でないかをチェックしている。
         天才。
         */
-        if(strchr("+-*/()<>;={},&[]",*p)){
+        if(strchr("+-*/()<>;={},&[].",*p)){
             cur=new_token(TK_RESERVED,cur,p,1);
             p++;
             continue;

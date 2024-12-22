@@ -52,7 +52,28 @@ int main(){
     assert(9,({int a=3;int z=6;a+z;}),"int a=3;int z=6; a+z;");
 
     assert(0,0,"0");
+
+    assert(8,({struct {int a;int b;}x; x.a=6;x.b=2;x.a+x.b;}),"struct {int a;int b;}x; x.a=6;x.b=2;x.a+x.b;");
+    assert(303,({
+        struct {int a;int b;}num[3];
+        int i;
+        for(i=0;i<3;i=i+1){
+            num[i].a=i;
+            num[i].b=i+100;
+        }
+        num[0].b+num[1].b+num[2].b;
+    }),
+    "
+        struct {int a;int b;}num[3];
+        int i;
+        for(i=0;i<3;i=i+1){
+            num[i].a=i;
+            num[i].b=i+100;
+        }
+        num[0].b+num[1].b+num[2].b;"
+    );
     
+
     printf("ok\n");
     return 0;
 }

@@ -9,6 +9,7 @@
 
 
 typedef struct Type Type;
+typedef struct Member Member;
 
 
 //
@@ -85,6 +86,7 @@ typedef enum{
     ND_LT,//<
     ND_LE,//<=
     ND_ASSIGN,
+    ND_MEMBER,//.(struct member access)
     ND_ADDR,//&
     ND_DEREF,//*
     ND_RETURN,
@@ -119,6 +121,10 @@ struct Node{
     Node*inc;
     //block or statement expression
     Node*body;
+
+    //struct member access
+    char*member_name;
+    Member*member;
 
     //function call
     char*funcname;
@@ -173,17 +179,26 @@ typedef enum{
     TY_INT,
 
     TY_PTR,
-    TY_ARRAY
+    TY_ARRAY,
     /*
     TY_ARRAYは変数領域を格納するときの掛け算に使うだけで
     代入、返り値として使う時は使わない
     */
+    TY_STRUCT
 }TypeKind;
 
 struct Type{
     TypeKind kind;
     Type*base;
     int array_size;
+    Member*members;
+};
+
+struct Member{
+    Member*next;
+    Type*ty;
+    char*name;
+    int offset;
 };
 
 Type*char_type();

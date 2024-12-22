@@ -40,6 +40,12 @@ void gen_addr(Node*node){
         case ND_DEREF:
             gen(node->lhs);
             return;
+        case ND_MEMBER:
+            gen_addr(node->lhs);
+            printf("  pop rax\n");
+            printf("  add rax, %d\n",node->member->offset);
+            printf("  push rax\n");
+            return;
     }
     error_tok(node->tok,"not a local value");
 }
@@ -92,11 +98,12 @@ void gen(Node*node){
             /*
             assert(9,({int a=3;int z=6;a+z;}),"int a=3;int z=6; a+z;");
             のようなコードにおいて,
-            add rsp, 8がないと引数渡しがおかしくなる。
+            add rsp, 8
             */
             printf("  add rsp, 8\n");
             return;
         case ND_VAR:
+        case ND_MEMBER:
             gen_addr(node);
             if(node->ty->kind!=TY_ARRAY){
                 load(node->ty);
