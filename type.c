@@ -1,28 +1,52 @@
 #include"chibicc.h"
 
-Type*new_type(TypeKind kind){
+/*
+align(64+1,8)の場合を考える
+n    =65  =0b01000001
+align=8   =0b00001000
+n+align-1 =0b01001000...(a)
+align-1   =0b00000111
+~(align-1)=0b11111000...(b)
+a & b     =0b01001000=64+8
+*/
+/*
+alignはおそらく2^xで、(x+1bit目だけが1)
+bはn+align-1のxbit目より上位のbitを反映させるためのもの。
+また、n+align-1はalign-1が(下位3bit)111なのでnの下位3bitいずれかが1だった時に
+4bit目(8)に繰り上げる。
+
+まとめるとalign_toはalignの倍数のうち、n以上のものの中で最小の数を返す関数。
+ただし、alignは2のべき乗
+*/
+int align_to(int n,int align){
+    return (n+align-1)& ~(align-1);//~...not演算子 //~(1011)=(0100)
+}
+
+
+Type*new_type(TypeKind kind,int align){
     Type*ty=calloc(1,sizeof(Type));
     ty->kind=kind;
+    ty->align=align;
     return ty;
 }
 
 Type*int_type(){
-    return new_type(TY_INT);
+    return new_type(TY_INT,8);
 }
 
 Type*char_type(){ 
-    return new_type(TY_CHAR);
+    return new_type(TY_CHAR,1);
 }
 
 
 Type*pointer_to(Type*base){
-    Type*ty=new_type(TY_PTR);
+    Type*ty=new_type(TY_PTR,8);
     ty->base=base;
     return ty;
 }
 
 Type*array_of(Type*base,int size){
-    Type*ty=new_type(TY_ARRAY);
+    Type*ty=new_type(TY_ARRAY,base->align);
     ty->base=base;
     ty->array_size=size;
     return ty;
@@ -39,11 +63,18 @@ int size_of(Type*ty){
             return size_of(ty->base)*ty->array_size;
         default: 
             assert(ty->kind==TY_STRUCT);
+            /*
+            return align_to(end,ty->align);
+            でend以上の数でty->alignの倍数である数のうち、最小のものを返す
+
+            ただし、struct型においてty->alignは要素内のalignの最大値であり、2^nの形
+            */
             Member*mem=ty->members;
             while(mem->next){
                 mem=mem->next;
             }
-            return mem->offset+size_of(mem->ty);
+            int end=mem->offset+size_of(mem->ty);
+            return align_to(end,ty->align);
     }
 }
 

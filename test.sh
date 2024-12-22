@@ -409,5 +409,24 @@ assert 5 'int main(){int x=2;{x=5;}return x;}'
 
 assert 2 'int main(){int x=2; return x;}'
 
+assert 0 '
+int main(){
+    struct{
+        char p;
+        char q;
+        int num;
+        int val;
+        char r;
+    }x;
+    x.p=5;
+    x.q=10;
+    x.num=1000000;
+    x.val=2000000;
+    x.r=100;
+    
+    return 0;
+}'
+
+
 
 echo OK

@@ -179,10 +179,73 @@ Type*struct_decl(){
     ty->members=head.next;
 
     //assign offset within the struct to members
+    /*解説
+
+    struct{
+        char p;
+        char q;
+        int num;
+        int val;
+        char r;
+    }x;
+    を例に考える。
+    x.pのalignは1。offsetはalign_to(offset,1)=offset=0; offset=1にインクリメント
+    x.qのalignは1。offsetはalign_to(offset,1)=offset=1; offset=2にインクリメント
+    x.numのalignは8。offsetはalign_to(offset,8)=8  offset=16にインクリメント
+    x.valのalignは8。offsetはalign_to(offset,8)=16  offset=24にインクリメント
+    x.rのalignは1。offsetはalign_to(offset,1)=offset=24; offset=25にインクリメント
+    そしてty->alignは8。これは要素内のalignの最大値である
+
+    32|_|      =align_to(end,ty->align)...size_of
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|      =emd...size_of
+    24|_|<-x.r =mem->offset()...struct_decl
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+    16|_|<-x.val
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+     8|_|<-x.num
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|
+      |_|<-x.q
+     0|_|<-x.p <-x
+
+     size_of関数でおいてstruct型は以下のような返り値(最後２行)
+     //memは最後の要素。ここではx.r
+            int end=mem->offset+size_of(mem->ty);
+            return align_to(end,ty->align);
+    end=24+1
+    align_to(end,ty->align)=align_to(19,8)=32
+    */
     int offset=0;
     for(Member*mem=ty->members;mem;mem=mem->next){
+        offset=align_to(offset,mem->ty->align);
         mem->offset=offset;
         offset+=size_of(mem->ty);
+
+        if(ty->align < mem->ty->align){//ty->alignはcallocで0に初期化されてる
+            ty->align=mem->ty->align;
+        }
     }
 
     return ty;

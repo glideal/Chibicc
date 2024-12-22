@@ -72,7 +72,26 @@ int main(){
         }
         num[0].b+num[1].b+num[2].b;"
     );
-    
+
+    assert(32,({
+        struct{
+            char p;
+            char q;
+            int num;
+            int val;
+            char r;
+        }x;
+        sizeof x;
+    }),"
+        struct{
+            char p;
+            char q;
+            int num;
+            int val;
+            char r;
+        }x;
+        sizeof x;");
+
 
     printf("ok\n");
     return 0;
