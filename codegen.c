@@ -89,7 +89,12 @@ void gen(Node*node){
             return; 
         case ND_EXPR_STMT:
             gen(node->lhs);
-            //printf("  add rsp, 8\n");
+            /*
+            assert(9,({int a=3;int z=6;a+z;}),"int a=3;int z=6; a+z;");
+            のようなコードにおいて,
+            add rsp, 8がないと引数渡しがおかしくなる。
+            */
+            printf("  add rsp, 8\n");
             return;
         case ND_VAR:
             gen_addr(node);

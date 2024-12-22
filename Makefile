@@ -9,7 +9,9 @@ chibicc: $(SRCS)
 $(SRCS):chibicc.h
 
 test: chibicc
-	./test.sh
+	./chibicc tests > tmp.s
+	gcc -static -o tmp tmp.s
+	./tmp
 
 clean:
 	rm -f *.o *~ tmp* run*
