@@ -91,6 +91,12 @@ int main(){
             char r;
         }x;
         sizeof x;");
+    
+    //現時点ではポインタ同士の演算はダメ(type.c)
+    //assert(15,({int x;char p;&p-&x;}),"int x;char p;int a=&x;int b=&p;b-a;");
+
+    assert(15,({int x=2;char p=4;int a=&x;int b=&p;b-a;}),"int x;char p;int a=&x;int b=&p;b-a;");
+    assert(1,({char x;int p;int a=&x;int b=&p;b-a;}),"char x;int p;int a=&x;int b=&p;b-a;");
 
 
     printf("ok\n");

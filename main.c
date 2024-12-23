@@ -39,10 +39,37 @@ int main(int argc, char **argv){
     add_type(prog);
 
     //Assign offsets to local variables.
+    /*
+    --------------------------------------------
+    int x;
+    char p;
+    //parse.cにて、
+    //p->next=x
+    //のように順序が逆になってる
+    x...offset=align_to(0,1)=0;
+        offset+=1;
+        var->offset=offset=1
+
+    p...offset=align_to(1,8)=8;
+        offset+=8;
+        var->offset=16;
+    --------------------------------------------
+    char x;
+    int p;
+    x...offset=align_to(0,8)=0;
+        offset+=8;
+        var->offset=offset=8
+
+    p...offset=align_to(8,1)=8;
+        offset+=1;
+        var->offset=9;
+    --------------------------------------------
+    */
     for(Function*fn=prog->fns;fn;fn=fn->next){
         int offset=0;
         for(VarList*vl=fn->locals;vl;vl=vl->next){
             Var*var=vl->var;
+            offset=align_to(offset,var->ty->align);
             offset+=size_of(var->ty);
             var->offset=offset;
         }

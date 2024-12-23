@@ -189,6 +189,7 @@ Type*struct_decl(){
         char r;
     }x;
     を例に考える。
+    この時点で順番通り、p->q->num->val->rとなっている
     x.pのalignは1。offsetはalign_to(offset,1)=offset=0; offset=1にインクリメント
     x.qのalignは1。offsetはalign_to(offset,1)=offset=1; offset=2にインクリメント
     x.numのalignは8。offsetはalign_to(offset,8)=8  offset=16にインクリメント
