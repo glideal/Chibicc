@@ -1,9 +1,16 @@
 #include"chibicc.h"
 
+typedef struct TagScope TagScope;
+struct TagScope{
+    TagScope*next;
+    char*name;
+    Type*ty;
+};
 
 VarList*locals;
 VarList*globals;
 VarList*scope;
+TagScope*tag_scope;
 
 //find variable by name
 Var*find_var(Token*tok){
@@ -15,6 +22,16 @@ Var*find_var(Token*tok){
         }
     }
     return NULL;
+}
+
+TagScope*find_tag(Token*tok){
+    for(TagScope*sc=tag_scope;sc;sc=sc->next){
+        if(strlen(sc->name)==tok->len
+        &&!memcmp(tok->str,sc->name,tok->len)){
+            return sc;
+        }
+        return NULL;
+    }
 }
 
 Node*new_node(NodeKind kind,Token*tok){
@@ -160,9 +177,27 @@ Type*read_type_suffix(Type*base){
     return array_of(base,sz);
 }
 
-//struct_decl="struct" "{" struct_member "}"
+void push_tag_scope(Token*tok,Type*ty){
+    TagScope*sc=calloc(1,sizeof(TagScope));
+    sc->next=tag_scope;
+    sc->name=strn_dup(tok->str,tok->len);
+    sc->ty=ty;
+    tag_scope=sc;
+}
+
+//struct_decl="struct" ident
+//           |"struct" ident? "{" struct_member "}"
 Type*struct_decl(){
     expect("struct");
+
+    Token*tag=consume_ident();
+    if(tag&&!peek("{")){
+        TagScope*sc=find_tag(tag);
+        if(!sc){
+            error_tok(tag,"unknown struct type");
+        }
+        return sc->ty;
+    }
     expect("{");
 
     Member head;
@@ -247,6 +282,11 @@ Type*struct_decl(){
         if(ty->align < mem->ty->align){//ty->alignはcallocで0に初期化されてる
             ty->align=mem->ty->align;
         }
+    }
+
+    //struct tag declaration
+    if(tag){
+        push_tag_scope(tag,ty);
     }
 
     return ty;

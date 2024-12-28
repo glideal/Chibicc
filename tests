@@ -98,6 +98,8 @@ int main(){
     assert(15,({int x=2;char p=4;int a=&x;int b=&p;b-a;}),"int x;char p;int a=&x;int b=&p;b-a;");
     assert(1,({char x;int p;int a=&x;int b=&p;b-a;}),"char x;int p;int a=&x;int b=&p;b-a;");
 
+    assert(16,({struct t{int a;int b;}x;struct t y;sizeof(y);}),"struct t{int a;int b;}x;struct t y;sizeof(y);");
+    assert(12,({struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;}),"struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;");
 
     printf("ok\n");
     return 0;
