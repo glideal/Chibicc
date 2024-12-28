@@ -169,7 +169,7 @@ char*starts_with_reserved(char*p){
         }
     }
 
-    static char*punctuator[]={"==","!=","<=",">="};
+    static char*punctuator[]={"==","!=","<=",">=","->"};
     for(int i=0;i<sizeof(punctuator)/sizeof(*punctuator);i++){
         if(startswith(p,punctuator[i])){
             return punctuator[i];

@@ -100,6 +100,8 @@ int main(){
 
     assert(16,({struct t{int a;int b;}x;struct t y;sizeof(y);}),"struct t{int a;int b;}x;struct t y;sizeof(y);");
     assert(12,({struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;}),"struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;");
+    assert(10,({struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;}),"struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;");
+    assert(13,({struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;}),"struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;");
 
     printf("ok\n");
     return 0;
