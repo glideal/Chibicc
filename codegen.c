@@ -3,6 +3,7 @@
 int labelseq=0;
 char*funcname;
 char*argreg1[]={"dil","sil","dl","cl","r8b","r9b"};
+char*argreg2[]={"di","si","dx","cx","r8w","r9w"};
 char*argreg4[]={"edi","esi","edx","ecx","r8d","r9d"};
 char*argreg8[]={"rdi","rsi","rdx","rcx","r8","r9"};
 
@@ -68,6 +69,8 @@ void load(Type*ty){
         movsx
         */
         printf("  movsx rax, byte ptr [rax]\n");
+    }else if(sz==2){
+        printf("  movsx rax, word ptr [rax]\n");
     }else if(sz==4){
         printf("  movsxd rax, dword ptr [rax]\n");
     }else{
@@ -86,6 +89,8 @@ void store(Type*ty){
     int sz=size_of(ty);
     if(sz==1){
         printf("  mov [rax], dil\n");
+    }else if(sz==2){
+        printf("  mov [rax], di\n");
     }else if(sz==4){
         printf("  mov [rax], edi\n");
     }else{
@@ -314,6 +319,8 @@ void load_arg(Var*var, int idx){
     int sz=size_of(var->ty);
     if(sz==1){
         printf("  mov [rbp-%d], %s\n",var->offset,argreg1[idx]);
+    }else if(sz==2){
+        printf("  mov [rbp-%d], %s\n",var->offset,argreg2[idx]);
     }else if(sz==4){
         printf("  mov [rbp-%d], %s\n",var->offset,argreg4[idx]);
     }else{

@@ -38,6 +38,14 @@ int sub_char(char a,char b,char c){
     return a-b-c;
 }
 
+int sub_short(short a,short b,short c){
+    return a-b-c;
+}
+
+int sub_long(long a,long b,long c){
+    return a-b-c;
+}
+
 int fib(int x){
     if(x<=0){
         return 0;
@@ -107,6 +115,10 @@ int main(){
     assert(3,({typedef struct{int a;} t;t x;x.a=3;x.a;}),"typedef struct{int a} t;t x;x.a=3;x.a;");
     assert(1,({typedef int t;t t=1;t;}),"typedef int t;t t=1;t;");
     assert(2,({typedef struct{int a;} t;{typedef int t;}t x;x.a=2;x.a;}),"typedef struct{int a} t;{typedef int t;}t x;x.a=2;x.a;");
+
+    assert(4,({struct{char a;short b;}x;sizeof x;}),"struct{char a;short b;}x;sizeof x;");
+    assert(1,sub_short(7,3,3),"sub_short(7,3,3)");
+    assert(1,sub_long(7,3,3),"sub_long(7,3,3)");
 
     printf("ok\n");
     return 0;

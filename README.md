@@ -55,7 +55,7 @@ int func(){
 追記
 ちなみにgccでローカル変数funcと関数func()を用意してコンパイルしたところ、
 エラーになったので、少なくともgccでは関数の際に出てくるidentも(※)
-本コンパイラにおけるpush_var()尿な関数の対象内にしていると思われる
+本コンパイラにおけるpush_var()のような関数の対象内にしていると思われる
 
 ※function=basetype ident "(" params? ")" "{" stmt* "}"
 ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
@@ -234,3 +234,76 @@ stmt(){
 >>
 ty=basetype(){find_var("t")}
 push_var((char*name)"x",(Type*)ty,(bool is_local)true);
+--------------------------------------------------------------------
+12/29
+
+when exerting "pop", sub rsp, 8
+but all size of variable is not 8.
+doesn't unintentional stack interface happen?
+
+|_|...1 byte
+
+|_|<-rbp
+|_|
+|_|<-(rbp-2)==5
+|_|
+|_|<-(rbp-4)==3
+~~
+(|_|...8 byte)
+|_|<-[rbp-4]==3
+|_|<-[rbp-2]==5
+|_|
+
+
+int main(){
+    short a=3;
+    short b=5;
+    return a+b;
+}
+>>
+main:
+  push rbp
+  mov rbp, rsp
+  sub rsp, 8 //function stack size is a multiple of 8
+
+  lea rax, [rbp-4]
+  push rax
+  push 3
+  pop rdi
+  pop rax
+  mov [rax], di
+  push rdi
+  add rsp, 8
+
+  lea rax, [rbp-2]
+  push rax
+  push 5
+  pop rdi
+  pop rax
+  mov [rax], di
+  push rdi
+  add rsp, 8
+
+  lea rax, [rbp-4]
+  push rax
+  pop rax
+  movsx rax, word ptr [rax]
+  push rax
+
+  lea rax, [rbp-2]
+  push rax
+  pop rax
+  movsx rax, word ptr [rax]
+  push rax
+
+  pop rdi
+  pop rax
+  add rax, rdi
+  push rax
+  pop rax
+  jmp .Lreturn.main
+.Lreturn.main:
+  mov rsp, rbp
+  pop rbp
+  ret
+-----------------------------------------------------------------------
