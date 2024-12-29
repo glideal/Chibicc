@@ -1,5 +1,14 @@
 #include"chibicc.h"
 
+//Scope for local variables,global variables,or typedefs
+typedef struct VarScope VarScope;
+struct VarScope{
+    VarScope*next;
+    char*name;
+    Var*var;
+    Type*type_def;
+};
+
 typedef struct TagScope TagScope;
 struct TagScope{
     TagScope*next;
@@ -9,16 +18,15 @@ struct TagScope{
 
 VarList*locals;
 VarList*globals;
-VarList*scope;
+VarScope*var_scope;
 TagScope*tag_scope;
 
-//find variable by name
-Var*find_var(Token*tok){
-    for(VarList*vl=scope;vl;vl=vl->next){
-        Var*var=vl->var;
-        if(strlen(var->name)==tok->len
-        &&!memcmp(tok->str,var->name,tok->len)){
-            return var;
+//find variable or a typedef by name
+VarScope*find_var(Token*tok){
+    for(VarScope*sc=var_scope;sc;sc=sc->next){
+        if(strlen(sc->name)==tok->len
+        &&!memcmp(tok->str,sc->name,tok->len)){
+            return sc;
         }
     }
     return NULL;
@@ -66,6 +74,14 @@ Node*new_var(Var*var,Token*tok){
     return node;
 }
 
+VarScope*push_scope(char*name){
+    VarScope*sc=calloc(1,sizeof(VarScope));
+    sc->name=name;
+    sc->next=var_scope;
+    var_scope=sc;
+    return sc;
+}
+
 Var*push_var(char*name,Type*ty,bool is_local){
     Var*var=calloc(1,sizeof(Var));
     VarList*vl=calloc(1,sizeof(VarList));
@@ -80,13 +96,19 @@ Var*push_var(char*name,Type*ty,bool is_local){
         vl->next=globals;
         globals=vl;
     }
-
-    VarList*sc=calloc(1,sizeof(VarList));
-    sc->var=var;
-    sc->next=scope;
-    scope=sc;
+    push_scope(name)->var=var;
 
     return var;
+}
+
+Type*find_typedef(Token*tok){
+    if(tok->kind==TK_IDENT){
+        VarScope*sc=find_var(token);
+        if(sc){
+            return sc->type_def;
+        }
+    }
+    return NULL;
 }
 
 char*new_label(){
@@ -147,7 +169,7 @@ Program*program(){
     return prog;
 }
 
-//basetype=("char"|"int"|struct_decl)"*"*
+//basetype=("char"|"int"|struct_decl|typedef-name)"*"*
 Type*basetype(){
     if(!is_typename(token)){
         error_tok(token,"typename expected");
@@ -157,9 +179,12 @@ Type*basetype(){
         ty=char_type();
     }else if(consume("int")){
         ty=int_type();
-    }else{
+    }else if(consume("struct")){
         ty=struct_decl();
+    }else{
+        ty=find_var(consume_ident())->type_def;
     }
+    assert(ty);
 
     while(consume("*")){
         ty=pointer_to(ty);
@@ -188,8 +213,7 @@ void push_tag_scope(Token*tok,Type*ty){
 //struct_decl="struct" ident
 //           |"struct" ident? "{" struct_member "}"
 Type*struct_decl(){
-    expect("struct");
-
+    //read a struct tag
     Token*tag=consume_ident();
     if(tag&&!peek("{")){
         TagScope*sc=find_tag(tag);
@@ -231,6 +255,8 @@ Type*struct_decl(){
     x.valのalignは8。offsetはalign_to(offset,8)=16  offset=24にインクリメント
     x.rのalignは1。offsetはalign_to(offset,1)=offset=24; offset=25にインクリメント
     そしてty->alignは8。これは要素内のalignの最大値である
+
+      |_|...1 byte
 
     32|_|      =align_to(end,ty->align)...size_of
       |_|
@@ -368,14 +394,18 @@ void global_var(){
 }
 
 //declaration=basetype ident ( "[" num "]" )*("=" expr)";"
+//           |basetype ";"
 Node*declaration(){
     Token*tok=token;
     Type*ty=basetype();
+    if(consume(";")){//struct tag
+        return new_node(ND_NULL,tok);
+    }
     char*name=expect_ident();
     ty=read_type_suffix(ty);
     Var*var=push_var(name,ty,true);
 
-    if(consume(";")){
+    if(consume(";")){//declaration without assignment
         return new_node(ND_NULL,tok);
     }
 
@@ -395,7 +425,8 @@ Node*read_expr_stmt(){
 }
 
 bool is_typename(){
-    return peek("char")||peek("int")||peek("struct");
+    return peek("char")||peek("int")||peek("struct")||
+    find_typedef(token);
 }
 
 ///stmt="return" expr ";" | expr ";"
@@ -403,6 +434,7 @@ bool is_typename(){
 ///    |"while" "(" expr ")" stmt
 ///    |"for" "(" expr? ";" expr? ";" expr? ")" stmt
 ///    |"{" stmt* "}"
+///    |"typedef" basetype ident ("[" num "]")* ";"
 ///    |declaration
 ///    | expr ";"
 Node*stmt(){
@@ -455,17 +487,29 @@ Node*stmt(){
         head.next=NULL;
         Node*cur=&head;
 
-        VarList*sc=scope;
+        VarScope*sc1=var_scope;
+        TagScope*sc2=tag_scope;
         while(!consume("}")){
             cur->next=stmt();
             cur=cur->next;
         }
-        scope=sc;
+        var_scope=sc1;
+        tag_scope=sc2;
 
         Node*node=new_node(ND_BLOCK,tok);
         node->body=head.next;
         return node;
     }
+
+    if(tok=consume("typedef")){
+        Type*ty=basetype();
+        char*name=expect_ident();
+        ty=read_type_suffix(ty);
+        expect(";");
+        push_scope(name)->type_def=ty;
+        return new_node(ND_NULL,tok);
+    }
+
     if(is_typename()){
         return declaration();
     }
@@ -615,7 +659,8 @@ Node*postfix(){
 //GNU is general term for free software 
 //aimed at Unix-compatible system that is not UNIX
 Node*stmt_expr(Token*tok){
-    VarList*sc=scope;
+    VarScope*sc1=var_scope;
+    TagScope*sc2=tag_scope;
 
     Node*node=new_node(ND_STMT_EXPR,tok);
     node->body=stmt();
@@ -627,7 +672,8 @@ Node*stmt_expr(Token*tok){
     }
     expect(")");
 
-    scope=sc;
+    var_scope=sc1;
+    tag_scope=sc2;
 
     if(cur->kind!=ND_EXPR_STMT){
         error_tok(cur->tok,"stmt expr returning void is not supported");
@@ -685,11 +731,11 @@ Node*primary(){
             node->args=func_args();
             return node;
         }
-        Var*var=find_var(tok);
-        if(!var){
-            error_tok(tok,"undefined variable");
+        VarScope*sc=find_var(tok);
+        if(sc&&sc->var){
+            return new_var(sc->var,tok);
         }
-        return new_var(var,tok);
+        error_tok(tok,"indefined variable");
     }
     tok=token;
 

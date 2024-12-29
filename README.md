@@ -59,3 +59,178 @@ int func(){
 
 ※function=basetype ident "(" params? ")" "{" stmt* "}"
 ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+12/29
+
+in codegen.c, case ND_EXPR_STMT
+why "add rsp, 8"
+
+|_|...8 byte
+
+//movement of stack until function call
+
+//no add rsp
+|_|<-2|          |          |
+|_|   |(<-[a])<-3|          |
+|_|   |(<-3)     |(<-[b])<-6|
+|_|   |          |(<-6)     |<-a|   |<-a+b
+|_|   |          |          |   |<-b|
+|_|
+|_|
+|_|
+
+// add rsp
+|_|<-2|            |            |   |
+|_|   |(<-[a])(<-3)|(<-[b])(<-6)|<-a|   |<-a+b
+|_|   |(<-3)       |(<-6)       |   |<-b|
+|_|   |            |            |   |
+|_|
+|_|
+|_|
+|_|
+
+int main(){
+    return num(2,({int a=3;int b=6;a+b;}));
+}
+
+int num(int x,int y){
+    return x+y;
+}
+
+>>
+
+main:
+  push rbp
+  mov rbp, rsp
+  sub rsp, 16
+  push 2
+
+  lea rax, [rbp-16]
+  push rax
+  push 3
+  pop rdi
+  pop rax
+  mov [rax], rdi
+  push rdi
+  (add rsp, 8)
+
+  lea rax, [rbp-8]
+  push rax
+  push 6
+  pop rdi
+  pop rax
+  mov [rax], rdi
+  push rdi
+  (add rsp, 8)
+
+  lea rax, [rbp-16]
+  push rax
+  pop rax
+  mov rax, [rax]
+  push rax
+
+  lea rax, [rbp-8]
+  push rax
+  pop rax
+  mov rax, [rax]
+  push rax
+
+  pop rdi
+  pop rax
+  add rax, rdi
+  push rax
+
+//function call
+  pop rsi
+  pop rdi
+  mov rax, rsp
+  and rax, 15
+  jnz .Lcall0
+  mov rax, 0
+  call num
+  jmp .Lend0
+.Lcall0:
+  sub rsp, 8
+  mov rax, 0
+  call num
+  (add rsp, 8)
+.Lend0:
+  push rax
+  pop rax
+  jmp .Lreturn.main
+.Lreturn.main:
+  mov rsp, rbp
+  pop rbp
+  ret
+.global num
+num:
+  push rbp
+  mov rbp, rsp
+  sub rsp, 16
+  mov [rbp-16], rdi
+  mov [rbp-8], rsi
+  lea rax, [rbp-16]
+  push rax
+  pop rax
+  mov rax, [rax]
+  push rax
+  lea rax, [rbp-8]
+  push rax
+  pop rax
+  mov rax, [rax]
+  push rax
+  pop rdi
+  pop rax
+  add rax, rdi
+  push rax
+  pop rax
+  jmp .Lreturn.num
+.Lreturn.num:
+  mov rsp, rbp
+  pop rbp
+  ret
+------------------------------------------------------------
+12/29
+about typedef
+
+code{
+typedef int t;
+t x;
+}
+
+parse.c
+line 1 typedef int t;>>add new var_scope
+
+stmt(){
+  ...
+  if(tok=consume("typedef")){
+
+  }
+  ...
+}
+>>
+(VarScope*){
+  (VarScope*)next=/*existing*/var_scope
+  (char*)name="t";
+  (Var*)var=NULL
+  (Type*)type_def={
+    kind=TY_INT;
+    align=8;
+    base=NULL;
+    array_size=0;
+    members=NULL;
+  }
+}
+
+line 2 "t x;">> compile as "int x;"
+
+stmt(){
+  ...
+  if(is_typename()){
+    return declaration();
+  }
+  ...
+}
+=>declaration()
+>>
+ty=basetype(){find_var("t")}
+push_var((char*name)"x",(Type*)ty,(bool is_local)true);

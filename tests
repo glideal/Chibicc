@@ -98,10 +98,15 @@ int main(){
     assert(15,({int x=2;char p=4;int a=&x;int b=&p;b-a;}),"int x;char p;int a=&x;int b=&p;b-a;");
     assert(1,({char x;int p;int a=&x;int b=&p;b-a;}),"char x;int p;int a=&x;int b=&p;b-a;");
 
-    assert(16,({struct t{int a;int b;}x;struct t y;sizeof(y);}),"struct t{int a;int b;}x;struct t y;sizeof(y);");
+    assert(16,({struct t{int a;int b;};struct t y;sizeof(y);}),"struct t{int a;int b;}x;struct t y;sizeof(y);");
     assert(12,({struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;}),"struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;");
     assert(10,({struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;}),"struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;");
     assert(13,({struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;}),"struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;");
+    
+    assert(10,({typedef int t;t x=2;sizeof(x)+x;}),"typedef int t;t x=2;sizeof(x)+x;");
+    assert(3,({typedef struct{int a;} t;t x;x.a=3;x.a;}),"typedef struct{int a} t;t x;x.a=3;x.a;");
+    assert(1,({typedef int t;t t=1;t;}),"typedef int t;t t=1;t;");
+    assert(2,({typedef struct{int a;} t;{typedef int t;}t x;x.a=2;x.a;}),"typedef struct{int a} t;{typedef int t;}t x;x.a=2;x.a;");
 
     printf("ok\n");
     return 0;
