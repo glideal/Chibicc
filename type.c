@@ -30,6 +30,10 @@ Type*new_type(TypeKind kind,int align){
     return ty;
 }
 
+Type*void_type(){
+    return new_type(TY_VOID,1);
+}
+
 Type*short_type(){
     return new_type(TY_SHORT,2);
 }
@@ -46,6 +50,11 @@ Type*char_type(){
     return new_type(TY_CHAR,1);
 }
 
+Type*func_type(Type*return_ty){
+    Type*ty=new_type(TY_FUNC,1);
+    ty->return_ty=return_ty;
+    return ty;
+}
 
 Type*pointer_to(Type*base){
     Type*ty=new_type(TY_PTR,8);
@@ -61,6 +70,8 @@ Type*array_of(Type*base,int size){
 }
 
 int size_of(Type*ty){
+    assert(ty->kind!=TY_VOID);
+
     switch(ty->kind){
         case TY_CHAR:
             return 1;
@@ -125,7 +136,6 @@ void visit(Node*node){
         case ND_NE:
         case ND_LT:
         case ND_LE:
-        case ND_FUNCALL:
         case ND_NUM:
             node->ty=int_type();
             return;
@@ -178,6 +188,9 @@ void visit(Node*node){
                 error_tok(node->tok,"invailed pointer dereference");
             }
             node->ty=node->lhs->ty->base;//(Type*)ty //(Type*)base
+            if(node->ty->kind==TY_VOID){
+                error_tok(node->tok,"dereferencing a void pointer");
+            }
             return;
         case ND_SIZEOF:
             node->kind=ND_NUM;

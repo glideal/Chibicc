@@ -92,7 +92,7 @@ Var*push_var(char*name,Type*ty,bool is_local){
     if(is_local){
         vl->next=locals;
         locals=vl;
-    }else{
+    }else if(ty->kind!=TY_FUNC){
         vl->next=globals;
         globals=vl;
     }
@@ -174,13 +174,15 @@ Program*program(){
 }
 
 //type_specifier=builtin-type|struct-dec1|typedef-name
-//builtin-type="char"|"short"|"int"|"long"
+//builtin-type="void"|"char"|"short"|"int"|"long"
 Type*type_specifier(){
     if(!is_typename(token)){
         error_tok(token,"typename expected");
     }
     Type*ty;
-    if(consume("char")){
+    if(consume("void")){
+        ty=void_type();
+    }else if(consume("char")){
         ty=char_type();
     }else if(consume("short")){
         ty=short_type();
@@ -372,16 +374,20 @@ VarList*read_func_params(){
 Function*function(){
     //printf("program\n");
     locals=NULL;
-    Function*fn=calloc(1,sizeof(Function));
     Type*ty=type_specifier();
     char*name=NULL;
-    declarator(ty,&name);
-    fn->name=name;
+    ty=declarator(ty,&name);
 
+    //add a function type to the scope
+    push_var(name,func_type(ty),false);
+    //construct a function object
+    Function*fn=calloc(1,sizeof(Function));
+    fn->name=name;
     expect("(");
     fn->params=read_func_params();
     expect("{");
 
+    //read function body
     Node head;
     head.next=NULL;
     Node*cur=&head;
@@ -419,6 +425,9 @@ Node*declaration(){
     char*name=NULL;
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
+    if(ty->kind==TY_VOID){
+        error_tok(tok,"variable declared void");
+    }
     Var*var=push_var(name,ty,true);
 
     if(consume(";")){//declaration without assignment
@@ -441,7 +450,7 @@ Node*read_expr_stmt(){
 }
 
 bool is_typename(){
-    return peek("char")||peek("short")||peek("int")||peek("long")||
+    return peek("void")||peek("char")||peek("short")||peek("int")||peek("long")||
     peek("struct")||
     find_typedef(token);
 }
@@ -750,6 +759,16 @@ Node*primary(){
             Node*node=new_node(ND_FUNCALL,tok);
             node->funcname=strn_dup(tok->str,tok->len);
             node->args=func_args();
+
+            VarScope*sc=find_var(tok);
+            if(sc){
+                if(!sc->var||sc->var->ty->kind!=TY_FUNC){
+                    error_tok(tok,"not a function");
+                }
+                node->ty=sc->var->ty->return_ty;
+            }else{
+                node->ty=int_type();
+            }
             return node;
         }
         VarScope*sc=find_var(tok);

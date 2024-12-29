@@ -175,6 +175,7 @@ a[3]がコンパイルできるのは
 配列をポインタに型変換するということを行わなければなりません
 */
 typedef enum{
+    TY_VOID,
     TY_CHAR,
     TY_SHORT,
     TY_INT,
@@ -186,7 +187,8 @@ typedef enum{
     TY_ARRAYは変数領域を格納するときの掛け算に使うだけで
     代入、返り値として使う時は使わない
     */
-    TY_STRUCT
+    TY_STRUCT,
+    TY_FUNC,
 }TypeKind;
 
 struct Type{
@@ -195,6 +197,7 @@ struct Type{
     Type*base;
     int array_size;
     Member*members;
+    Type*return_ty;
 };
 
 struct Member{
@@ -205,10 +208,12 @@ struct Member{
 };
 
 int align_to(int n,int align);
+Type*void_type();
 Type*char_type();
 Type*short_type();
 Type*int_type();
 Type*long_type();
+Type*func_type(Type*return_ty);
 Type*pointer_to(Type*base);
 Type*array_of(Type*base,int size);
 int size_of(Type*ty);

@@ -56,6 +56,9 @@ int func(){
 ちなみにgccでローカル変数funcと関数func()を用意してコンパイルしたところ、
 エラーになったので、少なくともgccでは関数の際に出てくるidentも(※)
 本コンパイラにおけるpush_var()のような関数の対象内にしていると思われる
+>>
+12/29
+introduce return type. //(Type*)ty->return_ty
 
 ※function=basetype ident "(" params? ")" "{" stmt* "}"
 ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
