@@ -251,43 +251,26 @@ Type*struct_decl(){
     この時点で順番通り、p->q->num->val->rとなっている
     x.pのalignは1。offsetはalign_to(offset,1)=offset=0; offset=1にインクリメント
     x.qのalignは1。offsetはalign_to(offset,1)=offset=1; offset=2にインクリメント
-    x.numのalignは8。offsetはalign_to(offset,8)=8  offset=16にインクリメント
-    x.valのalignは8。offsetはalign_to(offset,8)=16  offset=24にインクリメント
-    x.rのalignは1。offsetはalign_to(offset,1)=offset=24; offset=25にインクリメント
-    そしてty->alignは8。これは要素内のalignの最大値である
+    x.numのalignは4。offsetはalign_to(offset,4)=4  offset=8にインクリメント
+    x.valのalignは4。offsetはalign_to(offset,4)=8  offset=12にインクリメント
+    x.rのalignは1。offsetはalign_to(offset,1)=offset=12; offset=13にインクリメント
+    そしてty->alignは4。これは要素内のalignの最大値である
 
       |_|...1 byte
 
-    32|_|      =align_to(end,ty->align)...size_of
+    16|_|      =align_to(end,ty->align)...size_of
+      |_|
+      |_|
+      |_|      =end...size_of
+    12|_|<-x.r =mem->offset()...struct_decl
       |_|
       |_|
       |_|
+     8|_|<-x.val
       |_|
       |_|
       |_|
-      |_|      =emd...size_of
-    24|_|<-x.r =mem->offset()...struct_decl
-      |_|
-      |_|
-      |_|
-      |_|
-      |_|
-      |_|
-      |_|
-    16|_|<-x.val
-      |_|
-      |_|
-      |_|
-      |_|
-      |_|
-      |_|
-      |_|
-     8|_|<-x.num
-      |_|
-      |_|
-      |_|
-      |_|
-      |_|
+     4|_|<-x.num
       |_|
       |_|<-x.q
      0|_|<-x.p <-x

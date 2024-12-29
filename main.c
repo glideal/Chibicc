@@ -46,23 +46,23 @@ int main(int argc, char **argv){
     //parse.cにて、
     //p->next=x
     //のように順序が逆になってる
-    x...offset=align_to(0,1)=0;
+    p...offset=align_to(0,1)=0;
         offset+=1;
         var->offset=offset=1
 
-    p...offset=align_to(1,8)=8;
-        offset+=8;
-        var->offset=16;
+    x...offset=align_to(1,4)=4;
+        offset+=4;
+        var->offset=8;
     --------------------------------------------
     char x;
     int p;
-    x...offset=align_to(0,8)=0;
-        offset+=8;
-        var->offset=offset=8
+    x...offset=align_to(0,4)=0;
+        offset+=4;
+        var->offset=offset=4
 
-    p...offset=align_to(8,1)=8;
+    p...offset=align_to(4,1)=4;
         offset+=1;
-        var->offset=9;
+        var->offset=5;
     --------------------------------------------
     */
     for(Function*fn=prog->fns;fn;fn=fn->next){

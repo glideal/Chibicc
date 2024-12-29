@@ -73,7 +73,7 @@ int main(){
         num[0].b+num[1].b+num[2].b;"
     );
 
-    assert(32,({
+    assert(16,({
         struct{
             char p;
             char q;
@@ -95,15 +95,15 @@ int main(){
     //現時点ではポインタ同士の演算はダメ(type.c)
     //assert(15,({int x;char p;&p-&x;}),"int x;char p;int a=&x;int b=&p;b-a;");
 
-    assert(15,({int x=2;char p=4;int a=&x;int b=&p;b-a;}),"int x;char p;int a=&x;int b=&p;b-a;");
+    assert(7,({int x=2;char p=4;int a=&x;int b=&p;b-a;}),"int x;char p;int a=&x;int b=&p;b-a;");
     assert(1,({char x;int p;int a=&x;int b=&p;b-a;}),"char x;int p;int a=&x;int b=&p;b-a;");
 
-    assert(16,({struct t{int a;int b;};struct t y;sizeof(y);}),"struct t{int a;int b;}x;struct t y;sizeof(y);");
+    assert(8,({struct t{int a;int b;};struct t y;sizeof(y);}),"struct t{int a;int b;}x;struct t y;sizeof(y);");
     assert(12,({struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;}),"struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;");
     assert(10,({struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;}),"struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;");
     assert(13,({struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;}),"struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;");
     
-    assert(10,({typedef int t;t x=2;sizeof(x)+x;}),"typedef int t;t x=2;sizeof(x)+x;");
+    assert(6,({typedef int t;t x=2;sizeof(x)+x;}),"typedef int t;t x=2;sizeof(x)+x;");
     assert(3,({typedef struct{int a;} t;t x;x.a=3;x.a;}),"typedef struct{int a} t;t x;x.a=3;x.a;");
     assert(1,({typedef int t;t t=1;t;}),"typedef int t;t t=1;t;");
     assert(2,({typedef struct{int a;} t;{typedef int t;}t x;x.a=2;x.a;}),"typedef struct{int a} t;{typedef int t;}t x;x.a=2;x.a;");
