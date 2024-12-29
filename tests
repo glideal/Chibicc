@@ -119,6 +119,12 @@ int main(){
     assert(4,({struct{char a;short b;}x;sizeof x;}),"struct{char a;short b;}x;sizeof x;");
     assert(1,sub_short(7,3,3),"sub_short(7,3,3)");
     assert(1,sub_long(7,3,3),"sub_long(7,3,3)");
+    
+    assert(24,({int*x[3];sizeof(x);}),"int*x[3];sizeof(x);");//TY_ARRAY,size=3,base...TY_PTR,base...TY_INT
+    assert(8,({int (*x)[3];sizeof x;}),"{int (*x)[3];sizeof x;");//TY_PTR,base...TY_ARRAY,size=3,base...TY_INT
+    //(*y)[3]...pointer to int type array whose size is 3
+    assert(4,({int x[3];int (*y)[3]=x;/* x=&x[0] */x[1]=4;(*y)[1];}),"int x[3];int (*y)[3]=x;/* x=&x[0] */,x[1]=4;(*y)[1];");
+    assert(4,({int x[3];int (*y)[3]=x;/* x=&x[0] */x[1]=4;y[0][1];}),"int x[3];int (*y)[3]=x;/* x=&x[0] */,x[1]=4;y[0][1];");
 
     printf("ok\n");
     return 0;
