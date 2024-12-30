@@ -115,12 +115,12 @@ void expect(char* s){
     token=token->next;
 }
 
-int expect_number(){
+long expect_number(){
     if(token->kind!=TK_NUM){
         error_tok(token,"expected a number");
     }
 
-    int val=token->val;
+    long val=token->val;
     token=token->next;
     return val;
 }

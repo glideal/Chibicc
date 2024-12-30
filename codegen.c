@@ -112,7 +112,17 @@ void gen(Node*node){
         case ND_NULL:
             return;
         case ND_NUM:
-            printf("  push %d\n",node->val);
+            /*
+            命令の効率性の観点からmov命令の即値は32bitとなっている。
+            movabsは64bit用の命令
+            */   
+            if(node->ty->kind==TY_INT){
+                printf("  push %d\n",(int)node->val);
+            }else{
+                assert(node->ty->kind==TY_LONG);
+                printf("  movabs rax, %ld\n",node->val);
+                printf("  push rax\n");
+            }
             return; 
         case ND_EXPR_STMT:
             gen(node->lhs);

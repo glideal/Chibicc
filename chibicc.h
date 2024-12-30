@@ -29,7 +29,7 @@ struct Token{
     TokenKind kind;
     Token*next;
     Type*ty;
-    int val;
+    long val;
     char*str;
     int len;
 
@@ -45,7 +45,7 @@ Token*peek(char*s);
 Token*consume(char*s);
 Token*consume_ident();
 void expect(char*op);
-int expect_number();
+long expect_number();
 char*expect_ident();
 bool at_eof();
 Token*new_token(TokenKind kind,Token*cur,char*str,int len);
@@ -131,7 +131,7 @@ struct Node{
     Node*args;
 
     Var*var;
-    int val;
+    long val;
 };
 
 //function definition
