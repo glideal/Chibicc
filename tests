@@ -73,9 +73,7 @@ long power_of_2(long n){
     return num;
 }
 
-char char_fn(){
-    return 257;
-}
+char char_fn();
 
 int main(){
     
