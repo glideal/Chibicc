@@ -174,7 +174,7 @@ Program*program(){
 }
 
 //type_specifier=builtin-type|struct-dec1|typedef-name
-//builtin-type="void"|"char"|"short"|"int"|"long"
+//builtin-type="void"|""_Boo|"char"|"short"|"int"|"long"
 Type*type_specifier(){
     if(!is_typename(token)){
         error_tok(token,"typename expected");
@@ -182,6 +182,8 @@ Type*type_specifier(){
     Type*ty;
     if(consume("void")){
         ty=void_type();
+    }else if(consume("_Bool")){
+        ty=bool_type();
     }else if(consume("char")){
         ty=char_type();
     }else if(consume("short")){
@@ -450,7 +452,7 @@ Node*read_expr_stmt(){
 }
 
 bool is_typename(){
-    return peek("void")||peek("char")||peek("short")||peek("int")||peek("long")||
+    return peek("void")||peek("_Bool")||peek("char")||peek("short")||peek("int")||peek("long")||
     peek("struct")||
     find_typedef(token);
 }
