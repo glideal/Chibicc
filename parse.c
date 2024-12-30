@@ -138,6 +138,7 @@ Node*equality();
 Node*relational();
 Node*add();
 Node*mul();
+Node*cast();
 Node*unary();
 Node*postfix();
 Node*primary();
@@ -708,38 +709,54 @@ Node*add(){
     }
 }
 
-//mul=unary("*" unary | "/" unary)*
+//mul=cast("*" cast | "/" cast)*
 Node*mul(){
     //printf("mul\n");
-    Node*node=unary();
+    Node*node=cast();
     Token*tok;
     for(;;){
         if(tok=consume("*")){
-            node=new_binary(ND_MUL,node,unary(),tok);
+            node=new_binary(ND_MUL,node,cast(),tok);
         }else if(tok=consume("/")){
-            node=new_binary(ND_DIV,node,unary(),tok);
+            node=new_binary(ND_DIV,node,cast(),tok);
         }else{
             return node;
         }
     }
 }
 
-//unary=("+" | "-" | "*" | "&" )?unary  
+//cast="(" type-name ")" cast | unary
+Node*cast(){
+    Token*tok=token;
+    if(consume("(")){
+        if(is_typename()){
+            Type*ty=type_name();
+            expect(")");
+            Node*node=new_unary(ND_CAST,cast(),tok);
+            node->ty=ty;
+            return node;
+        }
+        token=tok;
+    }
+    return unary();
+}
+
+//unary=("+" | "-" | "*" | "&" )?cast  
 //     | postfix
 Node*unary(){
     //printf("unary\n");
     Token*tok;
     if(consume("+")){
-        return unary();
+        return cast();
     }
     if(tok=consume("-")){
-        return new_binary(ND_SUB,new_num(0,tok),unary(),tok);
+        return new_binary(ND_SUB,new_num(0,tok),cast(),tok);
     }
     if(tok=consume("&")){
-        return new_unary(ND_ADDR,unary(),tok);
+        return new_unary(ND_ADDR,cast(),tok);
     }
     if(tok=consume("*")){
-        return new_unary(ND_DEREF,unary(),tok);
+        return new_unary(ND_DEREF,cast(),tok);
     }
     return postfix();
 }

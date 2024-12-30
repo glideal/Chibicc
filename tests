@@ -64,6 +64,15 @@ void void_ok(){
     printf("void ok\n");
 }
 
+long power_of_2(long n){
+    long num=1;
+    int i;
+    for(i=0;i<n;i=i+1){
+        num=num*2;
+    }
+    return num;
+}
+
 int main(){
     
     assert(9,({int a=3;int z=6;a+z;}),"int a=3;int z=6; a+z;");
@@ -172,6 +181,11 @@ int main(){
     assert(4,sizeof(0),"sizeof(0)");
     assert(4294967297,4294967297,"4294967297");//4294967297=2^32+1...33bit
     assert(8,sizeof 4294967297,"sizeof 4294967297");
+
+    assert(32,power_of_2(5),"power_of_2(5)");
+
+    assert(power_of_2(32)-1,power_of_2(32)-1,"power_of_2(32)-1");
+    assert(power_of_2(15)+power_of_2(2),({long num=power_of_2(33)+power_of_2(15)+power_of_2(2);(int)num;}),"long num=power_of_2(33)+power_of_2(15)+power_of_2(2);(int)num;");
 
     printf("ok\n");
     return 0;

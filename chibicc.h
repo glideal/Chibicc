@@ -100,6 +100,7 @@ typedef enum{
     ND_STMT_EXPR,
     ND_VAR,//local variable
     ND_NUM,
+    ND_CAST,//type cast
     ND_NULL
 }NodeKind;
 
