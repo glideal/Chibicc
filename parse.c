@@ -123,7 +123,9 @@ Program*program();
 Function*function();
 Type*type_specifier();
 Type*declarator(Type*ty,char**name);
+Type*abstract_declarator(Type*ty);
 Type*type_suffix(Type*ty);
+Type*type_name();
 Type*struct_decl();//declaration
 Member*struct_member();
 void global_var();
@@ -202,9 +204,9 @@ Type*type_specifier(){
 
     bool is_typedef=false;
 
+    Token*tok=token;
     for(;;){
         //read one token at a time
-        Token*tok=token;
         if(consume("typedef")){
             is_typedef=true;
         }else if(consume("void")){
@@ -235,37 +237,38 @@ Type*type_specifier(){
             token=token->next;
             user_type=ty;
         }
-
-        switch(base_type){
-            case VOID:
-                ty=void_type();
-                break;
-            case BOOL:
-                ty=bool_type();
-                break;
-            case CHAR:
-                ty=char_type();
-                break;
-            case SHORT:
-            case SHORT+INT:
-                ty=short_type();
-                break;
-            case INT:
-                ty=int_type();
-                break;
-            case LONG:
-            case LONG+INT:
-                ty=long_type();
-                break;
-            case 0:
-                //if there's no type specifier, it becomes int.
-                //for example, 'typedef x' defines x as an alias for int
-                ty=user_type?user_type:int_type();
-                break;
-            default:
-                error_tok(tok,"invalid type");
-        }
     }
+
+    switch(base_type){
+        case VOID:
+            ty=void_type();
+            break;
+        case BOOL:
+            ty=bool_type();
+            break;
+        case CHAR:
+            ty=char_type();
+            break;
+        case SHORT:
+        case SHORT+INT:
+            ty=short_type();
+            break;
+        case INT:
+            ty=int_type();
+            break;
+        case LONG:
+        case LONG+INT:
+            ty=long_type();
+            break;
+        case 0:
+            //if there's no type specifier, it becomes int.
+            //for example, 'typedef x' defines x as an alias for int
+            ty=user_type?user_type:int_type();
+            break;
+        default:
+            error_tok(tok,"invalid type");
+    }
+
 
     ty->is_typedef=is_typedef;
     assert(ty);
@@ -289,6 +292,21 @@ Type*declarator(Type*ty,char**name){
     return type_suffix(ty);
 }
 
+//abstract-declarator="*"* ("(" abstract-declarator ")" |ident) type-suffix
+Type*abstract_declarator(Type*ty){
+    while(consume("*")){
+        ty=pointer_to(ty);
+    }
+    if(consume("(")){
+        Type*placeholder=calloc(1,sizeof(Type));
+        Type*new_ty=abstract_declarator(placeholder);
+        expect(")");
+        *placeholder=*type_suffix(ty);
+        return new_ty;
+    }
+    return type_suffix(ty);
+}
+
 //type-suffix=("[" num "]" type-suffix)?
 Type*type_suffix(Type*ty){
     if(!consume("[")){
@@ -298,6 +316,13 @@ Type*type_suffix(Type*ty){
     expect("]");
     ty=type_suffix(ty);
     return array_of(ty,sz);
+}
+
+//type-name=type-specifier abstract-declarator type-suffix
+Type*type_name(){
+    Type*ty=type_specifier();
+    ty=abstract_declarator(ty);
+    return type_suffix(ty);
 }
 
 void push_tag_scope(Token*tok,Type*ty){
@@ -807,8 +832,11 @@ Node*func_args(){
     return head.next;   
 }
 //primary= "(" expr "{" stmt-expr-tail
-//         | "(" expr ")" | "sizeof" unary | ident func-args? 
-//         | str | num 
+//         | "(" expr ")" 
+//         | "sizeof" "(" type-name ")"
+//         | ident func-args? 
+//         | str 
+//         | num 
 Node*primary(){
     //printf("primary\n");
     Token*tok;
@@ -821,6 +849,14 @@ Node*primary(){
         return node;
     }
     if(tok=consume("sizeof")){
+        if(consume("(")){
+            if(is_typename()){
+                Type*ty=type_name();
+                expect(")");
+                return new_num(size_of(ty),tok);
+            }
+            token=tok->next;//"("
+        }
         return new_unary(ND_SIZEOF,unary(),tok);
     }
     if(tok=consume_ident()){
