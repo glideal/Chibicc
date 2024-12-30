@@ -117,7 +117,7 @@ void truncate(Type*ty){//truncate...切り捨てる
 
     int sz=size_of(ty);
     if(sz==1){
-        printf("  movsx raz,al\n");
+        printf("  movsx rax,al\n");
     }else if(sz==2){
         printf("  movsx rax, ax\n");
     }else if(sz==4){
@@ -273,6 +273,8 @@ void gen(Node*node){
             printf("  add rsp, 8\n");
             printf(".Lend%d:\n",seq);
             printf("  push rax\n");
+
+            truncate(node->ty);
             return;
         }
         case ND_RETURN:

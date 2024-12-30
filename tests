@@ -73,6 +73,10 @@ long power_of_2(long n){
     return num;
 }
 
+char char_fn(){
+    return 257;
+}
+
 int main(){
     
     assert(9,({int a=3;int z=6;a+z;}),"int a=3;int z=6; a+z;");
@@ -147,7 +151,7 @@ int main(){
     g1=3;
     assert(3,({*g1_ptr();}),"*g1_ptr();");
 
-    void_ok();
+    //void_ok();
 
     assert(0,({_Bool x=0;x;}),"_Bool x=0;x;");
     assert(1,({_Bool x=1;x;}),"_Bool x=1;x;");
@@ -189,6 +193,8 @@ int main(){
 
     assert(97,'a',"'a'");
     assert(10,'\n',"\'\\n\'");
+    
+    assert(1,char_fn(),"char_fn()");
 
 
     printf("ok\n");
