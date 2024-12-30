@@ -187,6 +187,10 @@ int main(){
     assert(power_of_2(32)-1,power_of_2(32)-1,"power_of_2(32)-1");
     assert(power_of_2(15)+power_of_2(2),({long num=power_of_2(33)+power_of_2(15)+power_of_2(2);(int)num;}),"long num=power_of_2(33)+power_of_2(15)+power_of_2(2);(int)num;");
 
+    assert(97,'a',"'a'");
+    assert(10,'\n',"\'\\n\'");
+
+
     printf("ok\n");
     return 0;
 }

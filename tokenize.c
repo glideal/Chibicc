@@ -233,6 +233,33 @@ Token*read_string_literal(Token*cur,char*start){
     */
 }
 
+Token*read_char_literal(Token*cur,char*start){
+    //(char)start=='\''
+    char*p=start+1;
+    if(*p=='\0'){
+        error_at(start,"unclosed char literal");
+    }
+
+    char c;
+    if(*p=='\\'){
+        p++;
+        c=get_escape_char(*p);
+        p++;
+    }else{
+        c=*p;
+        p++;
+    }
+
+    if(*p!='\''){
+        error_at(start,"char literal too long");
+    }
+    p++;
+
+    Token*tok=new_token(TK_NUM,cur,start,p-start);
+    tok->val=c;
+    return tok;
+}
+
 Token*tokenize(){
     char*p=user_input;
     Token head;
@@ -301,6 +328,13 @@ Token*tokenize(){
         //ascii start SP(32) and end DEL(127)
         if(*p=='"'){
             cur=read_string_literal(cur,p);
+            p+=cur->len;
+            continue;
+        }
+
+        //character literal
+        if(*p=='\''){
+            cur=read_char_literal(cur,p);
             p+=cur->len;
             continue;
         }
