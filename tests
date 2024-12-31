@@ -194,6 +194,12 @@ int main(){
     
     assert(1,char_fn(),"char_fn()");
 
+    assert(0,({enum{zero,one,two};zero;}),"enum{zero,one,two};zero;");
+    assert(6,({enum{five=5,six,seven};six;}),"enum{five=5,six,seven};six;");
+    assert(4,({enum t{zero,one,two};enum t y;sizeof y;}),"enum t{zero,one,two};enum t y;sizeof y;");
+    assert(4,({enum t{zero,one,two};enum t y;y=4;y;}),"enum t{zero,one,two};enum t y;y=4;y;");
+    assert(2,({typedef enum t{zero,one,two} t;t y;y=two;y;}),"typedef enum t{zero,one,two} t;t y;y=two;y;");
+
 
     printf("ok\n");
     return 0;

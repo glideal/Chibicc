@@ -310,3 +310,62 @@ main:
   pop rbp
   ret
 -----------------------------------------------------------------------
+12/31
+'
+int main(){
+  return num();
+}
+'>>assembler error
+
+'
+int main(){
+  int num=1;
+  return num();
+}
+int num(){
+  return 2;
+}
+'>>compiler error :"not a function"
+
+'
+int num(){
+  int num=2;
+  return num;
+}
+int main(){
+  return num();
+}
+'>> compiler error :in main, "not a function"
+
+'
+int main(){
+  return num();
+}
+int num(){
+  return 2;
+}
+'>>
+else{
+    printf("no sc \n");
+    node->ty=int_type();
+}を通ってコンパイルされた。
+int num() > char num()
+に変更しても同様だった。return_tyは何だったの？
+-----------------------------------------------------------------------
+12/31
+'
+int main(){
+    enum{a=5,b=7};
+    int a=2;
+    return a;
+}
+'>>2
+
+'
+int main(){
+    int a=2;
+    enum{a=5,b=7};
+    return a;
+}
+'>>5
+-----------------------------------------------------------------------
