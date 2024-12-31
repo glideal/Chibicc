@@ -127,6 +127,18 @@ void truncate(Type*ty){//truncate...切り捨てる
     printf("  push rax\n");
 }
 
+void inc(Type*ty){
+    printf("  pop rax\n");
+    printf("  add rax, %d\n",ty->base?size_of(ty->base):1);
+    printf("  push rax\n");
+}
+
+void dec(Type*ty){
+    printf("  pop rax\n");
+    printf("  sub rax, %d\n",ty->base?size_of(ty->base):1);
+    printf("  push rax\n");
+}
+
 void gen(Node*node){
     switch(node->kind){
         case ND_NULL:
@@ -164,6 +176,58 @@ void gen(Node*node){
             gen_lval(node->lhs);
             gen(node->rhs);
             store(node->ty);
+            return;
+        case ND_PRE_INC:
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            /*
+            |_|<-address of x
+            |_|<-address of x
+            |_|
+            */
+            load(node->ty);
+            inc(node->ty);
+            /*
+            |_|<-address of x
+            |_|<-x+1
+            |_|
+            */
+            store(node->ty);
+            /*
+            |_|...rbp
+            |_|...rbp-(offset_of_x)==address of x <-x+1
+            |_|
+            ~
+            |_|<-x+1
+            |_|
+            */
+            return;
+        case ND_PRE_DEC:
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->ty);
+            dec(node->ty);
+            store(node->ty);
+            return;
+        case ND_POST_INC:
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->ty);
+            inc(node->ty);
+            store(node->ty);
+            dec(node->ty);
+            return;
+        case ND_POST_DEC:
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->ty);
+            dec(node->ty);
+            store(node->ty);
+            inc(node->ty);
+            return;
+        case ND_COMMA:
+            gen(node->lhs);
+            gen(node->rhs);
             return;
         case ND_ADDR:
             gen_addr(node->lhs);

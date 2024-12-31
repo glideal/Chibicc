@@ -178,7 +178,14 @@ void visit(Node*node){
             node->ty=node->lhs->ty;
             return;
         case ND_ASSIGN:
+        case ND_PRE_INC:
+        case ND_PRE_DEC:
+        case ND_POST_INC:
+        case ND_POST_DEC:
             node->ty=node->lhs->ty;
+            return;
+        case ND_COMMA:
+            node->ty=node->rhs->ty;
             return;
         case ND_MEMBER:{
             //ident "." ident

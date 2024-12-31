@@ -704,7 +704,7 @@ Node*stmt(){
 
         var_scope=sc1;
         tag_scope=sc2;
-        
+
         return node;
     }
     if(tok=consume("{")){
@@ -734,9 +734,15 @@ Node*stmt(){
     return node;
 }
 
-//expr=assign
+//expr=assign ("," assign)*
 Node*expr(){
-    return assign();
+    Node*node=assign();
+    Token*tok;
+    while(tok=consume(",")){
+        node=new_unary(ND_EXPR_STMT,node,node->tok);
+        node=new_binary(ND_COMMA,node,assign(),tok);
+    }
+    return node;
 }
 
 //assign=equality("=" assign)?
@@ -836,6 +842,7 @@ Node*cast(){
 }
 
 //unary=("+" | "-" | "*" | "&" )?cast  
+//     |("++"|"--")unary
 //     | postfix
 Node*unary(){
     //printf("unary\n");
@@ -852,10 +859,16 @@ Node*unary(){
     if(tok=consume("*")){
         return new_unary(ND_DEREF,cast(),tok);
     }
+    if(tok=consume("++")){
+        return new_unary(ND_PRE_INC,unary(),tok);
+    }
+    if(tok=consume("--")){
+        return new_unary(ND_PRE_DEC,unary(),tok);
+    }
     return postfix();
 }
 
-//postfix=primary ("[" expr "]" | "." ident)*
+//postfix=primary ("[" expr "]" | "." ident |"->" ident|"++"|"--")*
 Node*postfix(){
     Node*node=primary();
     Token*tok;
@@ -875,11 +888,19 @@ Node*postfix(){
             node->member_name=expect_ident();
             continue;
         }
-        if(consume("->")){
+        if(tok=consume("->")){
             //x->y is short for (*x).y
             node=new_unary(ND_DEREF,node,tok);
             node=new_unary(ND_MEMBER,node,tok);
             node->member_name=expect_ident();
+            continue;
+        }
+        if(tok=consume("++")){
+            node=new_unary(ND_POST_INC,node,tok);
+            continue;
+        }
+        if(tok=consume("--")){
+            node=new_unary(ND_POST_DEC,node,tok);
             continue;
         }
         return node;
