@@ -380,7 +380,7 @@ void emit_data(Program*prog){
         printf("%s:\n",var->name);
 
         if(!var->contents){
-            printf("  .zero %d\n",size_of(var->ty));
+            printf("  .zero %d\n",size_of(var->ty));//.zero n...nバイトをゼロで初期化
             continue;
         }
 

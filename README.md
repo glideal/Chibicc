@@ -351,6 +351,28 @@ else{
 }を通ってコンパイルされた。
 int num() > char num()
 に変更しても同様だった。return_tyは何だったの？
+
+
+int inc(){
+    int num=0;
+    num=num+1;
+    return num;
+}
+int main(){
+    return num();
+}>>compiler error : num() "not a function"
+
+int inc(){
+    static num;
+    num=num+1;
+    return num;
+}
+int main(){
+    return num();
+}>>compiler error : num() "not a function"
+関数が変わってもリセットされるのは(VarList*)localsだけで(VarScope*)var_scopeはそのまま
+localsはmain.cにてoffsetを確保する際にのみ使用
+staticはis_local=falseであり、global変数扱い
 -----------------------------------------------------------------------
 12/31
 '

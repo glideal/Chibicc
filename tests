@@ -75,6 +75,12 @@ long power_of_2(long n){
 
 char char_fn();
 
+int inc(){
+    static int num;
+    num=num+1;
+    return num;
+}
+
 int main(){
     
     assert(9,({int a=3;int z=6;a+z;}),"int a=3;int z=6; a+z;");
@@ -199,6 +205,10 @@ int main(){
     assert(4,({enum t{zero,one,two};enum t y;sizeof y;}),"enum t{zero,one,two};enum t y;sizeof y;");
     assert(4,({enum t{zero,one,two};enum t y;y=4;y;}),"enum t{zero,one,two};enum t y;y=4;y;");
     assert(2,({typedef enum t{zero,one,two} t;t y;y=two;y;}),"typedef enum t{zero,one,two} t;t y;y=two;y;");
+
+    assert(1,inc(),"inc()");//no acception to initialize static variable
+    assert(2,inc(),"inc()");
+    assert(3,inc(),"inc()");
 
 
     printf("ok\n");

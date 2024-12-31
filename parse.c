@@ -98,7 +98,6 @@ Var*push_var(char*name,Type*ty,bool is_local){
         vl->next=globals;
         globals=vl;
     }
-    push_scope(name)->var=var;
 
     return var;
 }
@@ -192,7 +191,7 @@ Program*program(){
 //            |"int"
 //            |"long"|"long" "int"|"int" "long"
 //
-//note that "typedef" can appear anywhere in a type-specifier
+//note that "typedef" and "static" can appear anywhere in a type-specifier
 Type*type_specifier(){
     if(!is_typename(token)){
         error_tok(token,"typename expected");
@@ -212,12 +211,15 @@ Type*type_specifier(){
     Type*user_type=NULL;
 
     bool is_typedef=false;
+    bool is_static=false;
 
     Token*tok=token;
     for(;;){
         //read one token at a time
         if(consume("typedef")){
             is_typedef=true;
+        }else if(consume("static")){
+            is_static=true;
         }else if(consume("void")){
             base_type+=VOID;
         }else if(consume("_Bool")){
@@ -285,6 +287,7 @@ Type*type_specifier(){
 
 
     ty->is_typedef=is_typedef;
+    ty->is_static=is_static;
     assert(ty);
     
     return ty;
@@ -511,8 +514,10 @@ VarList*read_func_param(){
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
 
+    Var*var=push_var(name,ty,true);
+    push_scope(name)->var=var;
     VarList*vl=calloc(1,sizeof(VarList));
-    vl->var=push_var(name,ty,true);
+    vl->var=var;
     return vl;
 }
 
@@ -545,7 +550,9 @@ Function*function(){
     ty=declarator(ty,&name);
 
     //add a function type to the scope
-    push_var(name,func_type(ty),false);
+    Var*var=push_var(name,func_type(ty),false);
+    push_scope(name)->var=var;
+
     //construct a function object
     Function*fn=calloc(1,sizeof(Function));
     fn->name=name;
@@ -581,7 +588,8 @@ void global_var(){
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
     expect(";");
-    push_var(name,ty,false);
+    Var*var=push_var(name,ty,false);
+    push_scope(name)->var=var;
 }
 
 //declaration=type-specifier declarator type-suffix ("=" expr)?";"
@@ -604,7 +612,13 @@ Node*declaration(){
     if(ty->kind==TY_VOID){
         error_tok(tok,"variable declared void");
     }
-    Var*var=push_var(name,ty,true);
+    Var*var;
+    if(ty->is_static){
+        var=push_var(new_label(),ty,false);
+    }else{
+        var=push_var(name,ty,true);
+    }
+    push_scope(name)->var=var;
 
     if(consume(";")){//declaration without assignment
         return new_node(ND_NULL,tok);
@@ -627,7 +641,7 @@ Node*read_expr_stmt(){
 
 bool is_typename(){
     return peek("void")||peek("_Bool")||peek("char")||peek("short")||peek("int")||peek("long")||
-    peek("enum")||peek("struct")||peek("typedef")||
+    peek("enum")||peek("struct")||peek("typedef")||peek("static")||
     find_typedef(token);
 }
 
@@ -973,7 +987,7 @@ Node*primary(){
                 return new_num(sc->enum_val,tok);
             }
         }
-        error_tok(tok,"indefined variable");
+        error_tok(tok,"undefined variable");
     }
     tok=token;
 
