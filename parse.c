@@ -136,6 +136,9 @@ bool is_typename();
 Node*stmt();
 Node*expr();
 Node*assign();
+Node*bitand();
+Node*bitor();
+Node*bitxor();
 Node*equality();
 Node*relational();
 Node*add();
@@ -745,11 +748,11 @@ Node*expr(){
     return node;
 }
 
-//assign=equality(assiign-op assign)?
+//assign=bitor(assiign-op assign)?
 //assign-op="="|"+="|"-="|"*="|"/="
 Node*assign(){
     //printf("assign\n");
-    Node*node=equality();
+    Node*node=bitor();
     Token*tok;
     if(tok=consume("=")){
         node=new_binary(ND_ASSIGN,node,assign(),tok);
@@ -765,6 +768,36 @@ Node*assign(){
     }
     if(tok=consume("/=")){
         node=new_binary(ND_A_DIV,node,assign(),tok);
+    }
+    return node;
+}
+
+//bitor=bitxor("|" bitxor)*
+Node*bitor(){
+    Node*node=bitxor();
+    Token*tok;
+    while(tok=consume("|")){
+        node=new_binary(ND_BITOR,node,bitxor(),tok);
+    }
+    return node;
+}
+
+//bitxor=bitand("^" bitand)*
+Node*bitxor(){
+    Node*node=bitand();
+    Token*tok;
+    while(tok=consume("^")){
+        node=new_binary(ND_BITXOR,node,bitand(),tok);
+    }
+    return node;
+}
+
+//bitand=equality("&" equality)*
+Node*bitand(){
+    Node*node=equality();
+    Token*tok;
+    while(tok=consume("&")){
+        node=new_binary(ND_BITAND,node,equality(),tok);
     }
     return node;
 }

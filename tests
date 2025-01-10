@@ -231,6 +231,19 @@ int main(){
     assert(0,~-1,"~-1");
     assert(1,~-2,"~-2");
 
+    assert(0,0&1,"0&1");
+    assert(3,7&3,"7&3");
+    assert(1,5&3,"5&3");
+    assert(10,-1&10,"-1&10");
+
+    assert(1,0|1,"0|1");
+    assert(3,2|1,"2|1");
+
+    assert(0,8^8,"8^8");
+    assert(13,5^8,"5^8");
+    assert(1,8^9,"8^9");
+
+
     printf("ok\n");
     return 0;
 }
