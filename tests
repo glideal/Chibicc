@@ -135,6 +135,7 @@ int main(){
     assert(12,({struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;}),"struct t{int a;int b;}x;struct t y;int t=2;y.a=10;t+y.a;");
     assert(10,({struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;}),"struct t{int a;int b;}x;struct t*y=&x;x.a=10;y->a;");
     assert(13,({struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;}),"struct t{int a;int b;}x;struct t*y=&x;y->a=13;x.a;");
+    assert(13,({struct t{int a;int b;}x;struct t*y=&x;(*y).a=13;x.a;}),"struct t{int a;int b;}x;struct t*y=&x;(*y).a=13;x.a;");
     
     assert(6,({typedef int t;t x=2;sizeof(x)+x;}),"typedef int t;t x=2;sizeof(x)+x;");
     assert(3,({typedef struct{int a;} t;t x;x.a=3;x.a;}),"typedef struct{int a} t;t x;x.a=3;x.a;");
@@ -218,6 +219,10 @@ int main(){
     assert(3,({int num[3];num[0]=3;num[1]=33;num[2]=333;int*p=num;*p;}),"int num[3];num[0]=3;num[1]=33;num[2]=333;int*p=num;*p;");
     assert(33,({int num[3];num[0]=3;num[1]=33;num[2]=333;int*p=num;p++;*p;}),"int num[3];num[0]=3;num[1]=33;num[2]=333;int*p=num;p++;*p;");
 
+    assert(7,({int a=3;a+=4;a;}),"int a=3;a+=4;a;");
+    assert(-1,({int a=3;a-=4;a;}),"int a=3;a-=4;a;");
+    assert(12,({int a=3;a*=4;a;}),"int a=3;a*=4;a;");
+    assert(2,({int a=8;a/=4;a;}),"int a=8;a/=4;a;");
 
     printf("ok\n");
     return 0;

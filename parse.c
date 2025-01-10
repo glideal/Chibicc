@@ -745,13 +745,26 @@ Node*expr(){
     return node;
 }
 
-//assign=equality("=" assign)?
+//assign=equality(assiign-op assign)?
+//assign-op="="|"+="|"-="|"*="|"/="
 Node*assign(){
     //printf("assign\n");
     Node*node=equality();
     Token*tok;
     if(tok=consume("=")){
         node=new_binary(ND_ASSIGN,node,assign(),tok);
+    }
+    if(tok=consume("+=")){
+        node=new_binary(ND_A_ADD,node,assign(),tok);
+    }
+    if(tok=consume("-=")){
+        node=new_binary(ND_A_SUB,node,assign(),tok);
+    }
+    if(tok=consume("*=")){
+        node=new_binary(ND_A_MUL,node,assign(),tok);
+    }
+    if(tok=consume("/=")){
+        node=new_binary(ND_A_DIV,node,assign(),tok);
     }
     return node;
 }
@@ -942,6 +955,13 @@ Node*stmt_expr(Token*tok){
     stmt-expr="(" "{" stmt stmt* "}" ")"のstmtのうち、
     一番最後のstmtだけ,ND_STMT_EXPRを挟まず,直でnode->lhsを持ってきている。
     なんで？？
+
+    ==>関数の引数代入の際に都合がいいから。
+    ND_STMT_EXPRのnodeは実行後にadd rsp, 8がされ、スタック上から実行結果の計算値は消される。
+    最後のstmtだけND_STMT_EXPRにすることで、
+    例えば、以下二つのような関数呼び出しは同じものとなる。
+    add(({int a=5;}))
+    add(({int a=5;a;}))
     */
     return node;
 }

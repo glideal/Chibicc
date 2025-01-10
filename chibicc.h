@@ -90,6 +90,10 @@ typedef enum{
     ND_PRE_DEC,//--x
     ND_POST_INC,//x++
     ND_POST_DEC,//x--
+    ND_A_ADD,// +=
+    ND_A_SUB,// -=
+    ND_A_MUL,// *=
+    ND_A_DIV,// /=
     ND_COMMA,
     ND_MEMBER,//.(struct member access)
     ND_ADDR,//&
