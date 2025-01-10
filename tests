@@ -227,6 +227,9 @@ int main(){
     assert(0,!1,"!1");
     assert(0,!2,"!2");
     assert(1,!0,"!0");
+    
+    assert(0,~-1,"~-1");
+    assert(1,~-2,"~-2");
 
     printf("ok\n");
     return 0;
