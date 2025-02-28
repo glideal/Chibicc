@@ -84,6 +84,8 @@ typedef enum{
     ND_BITAND,
     ND_BITOR,
     ND_BITXOR,
+    ND_LONGAND,
+    ND_LONGOR,
     ND_EQ,
     ND_NE,//!=
     ND_LT,//<

@@ -150,6 +150,8 @@ void visit(Node*node){
         case ND_LT:
         case ND_LE:
         case ND_NOT:
+        case ND_LONGOR:
+        case ND_LONGAND:
             node->ty=int_type();
             return;
         case ND_NUM:
