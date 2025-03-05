@@ -498,6 +498,154 @@ type.cにて
 1,ND_VAR...TY_ARRAY -> TY_INT
 2,ND_NUM 2...TY_INT
 -----------------------------------------------------------------------------------------------
+2025/3/6
+codegen.c の case ND_FOR,ND_WHILE の時に brkseq=brk; するけどこれ必要??
+(ND_BREAKを導入したときに brkseq や brk を書いた)
+
+=>これがないと for や while のブロック内に breakを伴う条件分 が複数出てくるとおかしくなるよ
+
+int main(){
+    int a=0; 
+    for(;;){              ...(A)
+        for(;;)break;     ...(B)
+        if(a++==4) break; ...(C)
+    } 
+    return a;
+}
+/*codegen.c の ND_IF での labelseq,brkseq の動き
+(1)
+  int seq=labelseq;
+  labelseq++;
+(2)
+*/
+/*codegen.c の ND_FOR,ND_WHILE での labelseq,brkseq の動き
+(1)
+  int seq=labelseq;
+  labelseq++;
+  int brk=brkseq;
+  brkseq=seq;
+(2)
+  ...
+  gen(node->then)
+  ...
+  printf(".L.break.%d:\n",seq);
+  brkseq=brk;
+(3)
+
+brkseqの使い道
+case ND_BREAK:
+    ...
+    printf("  jmp .L.break.%d\n",brkseq);
+    ...
+*/
+
+//brkseq=brk; 有り
+//ex)labelseq=1,brkseq=1
+//(1)labelseq=1,brkseq=1...(A)
+//(2)labelseq=2,brkseq=1,(seq=1,brk=1)
+// //gen(node->then) の中の for構文{
+//     (B)
+//      (1)labelseq=2,brkseq=1
+//      (2)labelseq=3,brkseq=2,(seq=2,brk=1)
+//       //gen(node->then){
+//            jmp .L.break.2 // printf("  jmp .L.break.%d\n",brkseq) //ND_BREAK
+//         }
+//         .L.break.2: // printf(".L.break.%d:\n",seq);
+//      (3)labelseq=3,brkseq=1,(seq=2,brk=1)
+//       
+//     (C)
+//      (1)labelseq=3,brkseq=1
+//      (2)labelseq=4,brkseq=1,(seq=3)
+//            jmp .L.break.1 // printf("  jmp .L.break.%d\n",brkseq) //ND_BREAK
+//   }
+//   .L.break.1: // printf(".L.break.%d:\n",seq);
+//(3)labelseq=4,brkseq=1,(seq=1,brk=1)
+
+
+//brkseq=brk; 無し
+//ex)labelseq=1,brkseq=1
+//(1)labelseq=1,brkseq=1
+//(2)labelseq=2,brkseq=1,(seq=1,brk=1)
+// //gen(node->then) の中の for構文{
+//     (B)
+//      (1)labelseq=2,brkseq=1
+//      (2)labelseq=3,brkseq=2,(seq=2,brk=1)
+//       //gen(node->then){
+//            jmp .L.break.2 // printf("  jmp .L.break.%d\n",brkseq) //ND_BREAK
+//         }
+//         .L.break.2: // printf(".L.break.%d:\n",seq);
+//      (3)labelseq=3,brkseq=2,(seq=2,brk=1)  //brkseq=2 (違う点)
+//      
+//     (C)
+//      (1)labelseq=3,brkseq=2
+//      (2)labelseq=4,brkseq=2,(seq=3)
+//            jmp .L.break.2 // printf("  jmp .L.break.%d\n",brkseq) //ND_BREAK
+//   }
+//   .L.break.1: // printf(".L.break.%d:\n",seq);
+//(2)labelseq=3,brkseq=2,(seq=1,brk=1)        //brkseq=2 (違う点)
+
+main:
+  push rbp
+  mov rbp, rsp
+  sub rsp, 8
+  lea rax, [rbp-4]
+  push rax
+  push 0
+  pop rdi
+  pop rax
+  mov [rax], edi
+  push rdi
+  add rsp, 8
+.Lbegin1:
+.Lbegin2:
+  jmp .L.break.2
+  jmp  .Lbegin2
+.L.break.2:
+  lea rax, [rbp-4]
+  push rax
+  push [rsp]
+  pop rax
+  movsxd rax, dword ptr [rax]
+  push rax
+  pop rax
+  add rax, 1
+  push rax
+  pop rdi
+  pop rax
+  mov [rax], edi
+  push rdi
+  pop rax
+  sub rax, 1
+  push rax
+  push 4
+  pop rdi
+  pop rax
+  cmp rax, rdi
+  sete al
+  movzb rax, al
+  push rax
+  pop rax
+  cmp rax, 0
+  je  .Lend3
+  jmp .L.break.1// brkseq=brk; 有り
+  jmp .L.break.2// brkseq=brk; 無し
+.Lend3:
+  jmp  .Lbegin1
+.L.break.1:
+  lea rax, [rbp-4]
+  push rax
+  pop rax
+  movsxd rax, dword ptr [rax]
+  push rax
+  pop rax
+  jmp .Lreturn.main
+.Lreturn.main:
+  mov rsp, rbp
+  pop rbp
+  ret
+
+
+------------------------------------------------------------------------
 
 
 

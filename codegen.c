@@ -1,6 +1,7 @@
 #include"chibicc.h"
 
-int labelseq=0;
+int labelseq=1;//0以外の適当な数値
+int brkseq=1;
 char*funcname;
 char*argreg1[]={"dil","sil","dl","cl","r8b","r9b"};
 char*argreg2[]={"di","si","dx","cx","r8w","r9w"};
@@ -355,19 +356,29 @@ void gen(Node*node){
         case ND_WHILE:{
             int seq=labelseq;
             labelseq++;
+            int brk=brkseq;
+            brkseq=seq;
+
             printf(".Lbegin%d:\n",seq);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je  .Lend%d\n",seq);
+            printf("  je  .L.break.%d\n",seq);
             gen(node->then);
             printf("  jmp  .Lbegin%d\n",seq);
-            printf(".Lend%d:\n",seq);
+            printf(".L.break.%d:\n",seq);
+
+            brkseq=brk;
             return;
         }
         case ND_FOR:{
+            //ex)(1)labelseq=10,brkseq=3
             int seq=labelseq;
             labelseq++;
+            int brk=brkseq;
+            brkseq=seq;
+
+            //(2)labelseq=11,brkseq=10,(seq=10,brk=3)
             if(node->init){
                 gen(node->init);
             }
@@ -376,14 +387,18 @@ void gen(Node*node){
                 gen(node->cond);
                 printf("  pop rax\n");
                 printf("  cmp rax, 0\n");
-                printf("  je  .Lend%d\n",seq);
+                printf("  je  .L.break.%d\n",seq);
             }
             gen(node->then);
             if(node->inc){
                 gen(node->inc);
             }
             printf("  jmp  .Lbegin%d\n",seq);
-            printf(".Lend%d:\n",seq);
+            printf(".L.break.%d:\n",seq);
+
+            brkseq=brk;
+            //(3)labelseq=11,brkseq=3,(seq=10,brk=3)
+            //brkseq=brk; の必要性は README.md 参照
             return;
         }
         case ND_BLOCK:
@@ -391,6 +406,10 @@ void gen(Node*node){
             for(Node*n=node->body;n;n=n->next){
                 gen(n);
             }
+            return;
+        case ND_BREAK:
+            if(brkseq==0) error_tok(node->tok,"stray break");//stary..(道から)それる、はくれる
+            printf("  jmp .L.break.%d\n",brkseq);
             return;
         case ND_FUNCALL:{
             int nargs=0;
