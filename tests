@@ -249,6 +249,25 @@ int main(){
     assert(0,0&&5,"0&&5");
     assert(1,(3-1)&&3,"(3-3)&&0");
 
+    assert(8,({ struct*foo;sizeof(foo);}),"struct*foo;sizeof(foo);");
+    assert(4,
+    ({ struct t *foo; struct t{ int x;}; sizeof(struct t);}),
+    "struct t *foo; struct t{ int x;}; sizeof(struct t);");
+    assert(1,
+    ({
+        struct t{ struct t*next;int x;}a; 
+        struct t b;
+        b.x=1;
+        a.next=&b;
+        a.next->x;
+    }),"
+struct t{ struct t*next;int x;}a; 
+struct t b;
+b.x=1;
+a.next=&b;
+a.next->x;
+    ");
+
     printf("ok\n");
     return 0;
 }

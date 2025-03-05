@@ -63,6 +63,7 @@ typedef struct Var Var;
 struct Var{
     char*name;
     Type*ty;
+    Token*tok;
     bool is_local;
     int offset;//local variable
 
@@ -210,11 +211,15 @@ typedef enum{
     TY_FUNC,
 }TypeKind;
 
+/*
+new_type()は*_type()でも使われている。
+*/
 struct Type{
-    TypeKind kind;
+    TypeKind kind;      //new_type()
     bool is_typedef;
     bool is_static;
-    int align;
+    bool is_incomplete;
+    int align;          //new_type()
     Type*base;
     int array_size;
     Member*members;
@@ -224,6 +229,7 @@ struct Type{
 struct Member{
     Member*next;
     Type*ty;
+    Token*tok;
     char*name;
     int offset;
 };
@@ -236,10 +242,11 @@ Type*short_type();
 Type*int_type();
 Type*long_type();
 Type*enum_type();
+Type*struct_type();
 Type*func_type(Type*return_ty);
 Type*pointer_to(Type*base);
 Type*array_of(Type*base,int size);
-int size_of(Type*ty);
+int size_of(Type*ty,Token*tok);
 
 void add_type(Program*prog);
 

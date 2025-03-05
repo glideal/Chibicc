@@ -234,6 +234,11 @@ stmt(){
   }
   ...
 }
+=>is_typename(){
+  return ...||find_typedef(Token*tok)
+}
+==>find_typedef
+
 =>declaration()
 >>
 ty=basetype(){find_var("t")}

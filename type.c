@@ -58,6 +58,12 @@ Type*enum_type(){
     return new_type(TY_ENUM,4);
 }
 
+Type*struct_type(){
+    Type*ty=new_type(TY_STRUCT,1);
+    ty->is_incomplete=true;
+    return ty;
+}
+
 Type*func_type(Type*return_ty){
     Type*ty=new_type(TY_FUNC,1);
     ty->return_ty=return_ty;
@@ -77,8 +83,15 @@ Type*array_of(Type*base,int size){
     return ty;
 }
 
-int size_of(Type*ty){
+/*
+//size_of(ty,tok)のtokはerror_tokでのみ使う
+//sizeof(int[])はNG
+//sizeof(int[3])はOK
+*/
+int size_of(Type*ty,Token*tok){
     assert(ty->kind!=TY_VOID);
+
+    if(ty->is_incomplete) error_tok(tok,"incomplete type");
 
     switch(ty->kind){
         case TY_BOOL:
@@ -93,7 +106,7 @@ int size_of(Type*ty){
         case TY_PTR:
             return 8;
         case TY_ARRAY: 
-            return size_of(ty->base)*ty->array_size;
+            return size_of(ty->base,tok)*ty->array_size;
         default: 
             assert(ty->kind==TY_STRUCT);
             /*
@@ -106,7 +119,7 @@ int size_of(Type*ty){
             while(mem->next){
                 mem=mem->next;
             }
-            int end=mem->offset+size_of(mem->ty);
+            int end=mem->offset+size_of(mem->ty,mem->tok);
             return align_to(end,ty->align);
     }
 }
@@ -229,7 +242,7 @@ void visit(Node*node){
         case ND_SIZEOF:
             node->kind=ND_NUM;
             node->ty=int_type();
-            node->val=size_of(node->lhs->ty);
+            node->val=size_of(node->lhs->ty,node->tok);
             node->lhs=NULL;//忘れてた
             return;
         case ND_STMT_EXPR:

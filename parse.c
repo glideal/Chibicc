@@ -5,6 +5,7 @@ typedef struct VarScope VarScope;
 struct VarScope{
     VarScope*next;
     char*name;
+    int depth;
     Var*var;
     Type*type_def;
     Type*enum_ty;
@@ -15,13 +16,36 @@ typedef struct TagScope TagScope;
 struct TagScope{
     TagScope*next;
     char*name;
+    int depth;
     Type*ty;
 };
+
+typedef struct{
+    VarScope*var_scope;
+    TagScope*tag_scope;
+}Scope;
 
 VarList*locals;
 VarList*globals;
 VarScope*var_scope;
 TagScope*tag_scope;
+int scope_depth;
+
+Scope*enter_scope(){
+    Scope*sc=calloc(1,sizeof(Scope));
+    sc->var_scope=var_scope;
+    sc->tag_scope=tag_scope;
+    ++scope_depth;
+    return sc;
+}
+
+void leave_scope(Scope*sc){
+    var_scope=sc->var_scope;
+    tag_scope=sc->tag_scope;
+    --scope_depth;
+}
+
+
 
 //find variable or a typedef by name
 VarScope*find_var(Token*tok){
@@ -80,16 +104,18 @@ VarScope*push_scope(char*name){
     VarScope*sc=calloc(1,sizeof(VarScope));
     sc->name=name;
     sc->next=var_scope;
+    sc->depth=scope_depth;
     var_scope=sc;
     return sc;
 }
 
-Var*push_var(char*name,Type*ty,bool is_local){
+Var*push_var(char*name,Type*ty,bool is_local,Token*tok){
     Var*var=calloc(1,sizeof(Var));
     VarList*vl=calloc(1,sizeof(VarList));
     var->name=name;
     var->ty=ty;
     var->is_local=is_local;
+    var->tok=tok;
     vl->var=var;
     if(is_local){
         vl->next=locals;
@@ -120,8 +146,8 @@ char*new_label(){
     return strn_dup(buf,20);
 }
 
-Program*program();
-Function*function();
+Program*program();//
+Function*function();//
 Type*type_specifier();
 Type*declarator(Type*ty,char**name);
 Type*abstract_declarator(Type*ty);
@@ -131,9 +157,9 @@ Type*struct_decl();//declaration
 Type*enum_specifier();
 Member*struct_member();
 void global_var();
-Node*declaration();
+Node*declaration();//
 bool is_typename();
-Node*stmt();
+Node*stmt();//
 Node*expr();
 Node*assign();
 Node*longor();
@@ -329,15 +355,52 @@ Type*abstract_declarator(Type*ty){
     return type_suffix(ty);
 }
 
-//type-suffix=("[" num "]" type-suffix)?
+//type-suffix=("[" num? "]" type-suffix)?
 Type*type_suffix(Type*ty){
+    /*
+    ex)int*num[3]
+    token->str..."["
+    (Type*)ty{
+        TypeKind kind;      //TY_PTR
+        bool is_typedef;    //false
+        bool is_static;     //false
+        bool is_incomplete; //undefined
+        int align;          //8
+        Type*base;          //TY_INT
+        int array_size;     //undefined
+        Member*members;     //undefined
+        Type*return_ty;     //undefined
+    };
+    */
     if(!consume("[")){
         return ty;
     }
-    int sz=expect_number();
-    expect("]");
+
+    int sz=0;
+    bool is_incomplete=true;
+    if(!consume("]")){
+        sz=expect_number();
+        is_incomplete=false;
+        expect("]");
+    }
     ty=type_suffix(ty);
-    return array_of(ty,sz);
+    ty=array_of(ty,sz);
+    ty->is_incomplete=is_incomplete;
+    return ty;
+    /*
+    ex)int*num[3]の続き
+    (Type*)ty{
+        TypeKind kind;      //TY_ARRAY
+        bool is_typedef;    //undefined
+        bool is_static;     //undefined
+        bool is_incomplete; //false
+        int align;          //==base->align==8
+        Type*base;          //TY_PTR
+        int array_size;     //==sz==3
+        Member*members;     //undefined
+        Type*return_ty;     //undefined
+    };
+    */
 }
 
 //type-name=type-specifier abstract-declarator type-suffix
@@ -351,6 +414,7 @@ void push_tag_scope(Token*tok,Type*ty){
     TagScope*sc=calloc(1,sizeof(TagScope));
     sc->next=tag_scope;
     sc->name=strn_dup(tok->str,tok->len);
+    sc->depth=scope_depth;
     sc->ty=ty;
     tag_scope=sc;
 }
@@ -359,20 +423,45 @@ void push_tag_scope(Token*tok,Type*ty){
 //           |"struct" ident? "{" struct_member "}"
 Type*struct_decl(){
     //read a struct tag
+    //struct_decl="struct" ident
     expect("struct");
     Token*tag=consume_ident();
     if(tag&&!peek("{")){
-        TagScope*sc=find_tag(tag);
-        if(!sc){
-            error_tok(tag,"unknown struct type");
+        TagScope*sc=find_tag(tag);//宣言済みかどうか
+        if(!sc){//宣言してない場合　//struct fooだけ
+            Type*ty=struct_type();
+            push_tag_scope(tag,ty);
+            return ty;
         }
         if(sc->ty->kind!=TY_STRUCT){
             error_tok(tag,"not a struct tag");
         }
-        return sc->ty;
+        return sc->ty;//like "struct foo"
     }
-    expect("{");
+    
+    //"struct" ident? "{" struct_member "}"
 
+    //Although it looks weird,
+    //"struct*foo" is legal C that defines
+    //foo as a pointer to an unnamed incomplete struct type
+    if(!consume("{"))return struct_type();//"*"だった場合
+
+    TagScope*sc=find_tag(tag);
+    Type*ty;
+    if(sc&&sc->depth==scope_depth){
+        //if there is an existing struct type having the same tag name in the same block scope,
+        //this is a redefinition //再定義
+        if(sc->ty->kind!=TY_STRUCT)error_tok(tag,"not a struct tag");
+        ty=sc->ty;
+    }else{
+        //register(登録する) a struct type as an incomplete type early, 
+        //so that you can write recursive(再帰的な) structs 
+        //such as "struct T { struct T*next } ".
+        ty=struct_type();
+        if(tag)push_tag_scope(tag,ty);
+    }
+
+    //read struct members
     Member head;
     head.next=NULL;
     Member*cur=&head;
@@ -382,8 +471,6 @@ Type*struct_decl(){
         cur=cur->next;
     }
 
-    Type*ty=calloc(1,sizeof(Type));
-    ty->kind=TY_STRUCT;
     ty->members=head.next;
 
     //assign offset within the struct to members
@@ -435,17 +522,14 @@ Type*struct_decl(){
     for(Member*mem=ty->members;mem;mem=mem->next){
         offset=align_to(offset,mem->ty->align);
         mem->offset=offset;
-        offset+=size_of(mem->ty);
+        offset+=size_of(mem->ty,mem->tok);
 
         if(ty->align < mem->ty->align){//ty->alignはcallocで0に初期化されてる
             ty->align=mem->ty->align;
         }
     }
 
-    //struct tag declaration
-    if(tag){
-        push_tag_scope(tag,ty);
-    }
+    ty->is_incomplete=false;
 
     return ty;
 }
@@ -503,6 +587,7 @@ Type*enum_specifier(){
 //struct_member=type-specifier declarator type-suffix ";"
 Member*struct_member(){
     Type*ty=type_specifier();
+    Token*tok=token;
     char*name=NULL;
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
@@ -510,16 +595,18 @@ Member*struct_member(){
     Member*mem=calloc(1,sizeof(Member));
     mem->name=name;
     mem->ty=ty;
+    mem->tok=tok;
     return mem;
 }
 
 VarList*read_func_param(){
     Type*ty=type_specifier();
     char*name=NULL;
+    Token*tok=token;
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
 
-    Var*var=push_var(name,ty,true);
+    Var*var=push_var(name,ty,true,tok);
     push_scope(name)->var=var;
     VarList*vl=calloc(1,sizeof(VarList));
     vl->var=var;
@@ -552,10 +639,11 @@ Function*function(){
     locals=NULL;
     Type*ty=type_specifier();
     char*name=NULL;
+    Token*tok=token;
     ty=declarator(ty,&name);
 
     //add a function type to the scope
-    Var*var=push_var(name,func_type(ty),false);
+    Var*var=push_var(name,func_type(ty),false,tok);
     push_scope(name)->var=var;
 
     //construct a function object
@@ -590,25 +678,49 @@ Function*function(){
 void global_var(){
     Type*ty=type_specifier();
     char*name=NULL;
+    Token*tok=token;
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
     expect(";");
-    Var*var=push_var(name,ty,false);
+    Var*var=push_var(name,ty,false,tok);
     push_scope(name)->var=var;
 }
 
 //declaration=type-specifier declarator type-suffix ("=" expr)?";"
 //           |btype-specifier ";"
+/*
+ex)int*num[2]; typedef struct foo foo_t
+Type*ty=type_specifier();   //int           //typedef struct foo
+ty=declarator(ty,&name);    //int*num       //typedef struct foo foo_t //(char*)name="foo_t"
+ty=type_suffix(ty);         //int*num[2]    //typedef struct foo foo_t //変化なし
+
+ex2)struct foo {...} x;
+Type*ty=type_specifier();   //struct foo {...}         
+ty=declarator(ty,&name);    //struct foo {...} x:
+ty=type_suffix(ty);         //struct foo {...} x:
+*/
 Node*declaration(){
-    Token*tok=token;
-    Type*ty=type_specifier();
-    if(consume(";")){//struct tag
+    //変数の型を決める
+    Token*tok;
+    Type*ty=type_specifier();   
+    if(tok=consume(";")){//struct tag //struct foo {...};
         return new_node(ND_NULL,tok);
     }
+
+    tok=token;
     char*name=NULL;
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
-    if(ty->is_typedef){
+
+    //いろんなオプション
+    /*
+    typedefについて
+    ex) typedef struct foo foo_t
+    "foo_t"という名前の変数としてpush_scope//push_scope(name)->type_def=ty;
+    これはfind_typedef関数で役立つ。
+    処理自体は何もしない//return new_node(ND_NULL,tok);
+    */
+    if(ty->is_typedef){//typedef struct foo foo_t
         expect(";");
         ty->is_typedef=false;
         push_scope(name)->type_def=ty;
@@ -619,9 +731,9 @@ Node*declaration(){
     }
     Var*var;
     if(ty->is_static){
-        var=push_var(new_label(),ty,false);
-    }else{
-        var=push_var(name,ty,true);
+        var=push_var(new_label(),ty,false,tok);
+    }else{//通常のローカル変数
+        var=push_var(name,ty,true,tok);
     }
     push_scope(name)->var=var;
 
@@ -685,8 +797,7 @@ Node*stmt(){
         return node;
     }
     if(tok=consume("for")){
-        VarScope*sc1=var_scope;
-        TagScope*sc2=tag_scope;
+        Scope*sc=enter_scope();
         Node*node=new_node(ND_FOR,tok);
         expect("(");
         if(!consume(";")){
@@ -707,9 +818,7 @@ Node*stmt(){
         }
         node->then=stmt();
 
-        var_scope=sc1;
-        tag_scope=sc2;
-
+        leave_scope(sc);
         return node;
     }
     if(tok=consume("{")){
@@ -717,14 +826,12 @@ Node*stmt(){
         head.next=NULL;
         Node*cur=&head;
 
-        VarScope*sc1=var_scope;
-        TagScope*sc2=tag_scope;
+        Scope*sc=enter_scope();
         while(!consume("}")){
             cur->next=stmt();
             cur=cur->next;
         }
-        var_scope=sc1;
-        tag_scope=sc2;
+        leave_scope(sc);
 
         Node*node=new_node(ND_BLOCK,tok);
         node->body=head.next;
@@ -989,8 +1096,7 @@ Node*postfix(){
 //GNU is general term for free software 
 //aimed at Unix-compatible system that is not UNIX
 Node*stmt_expr(Token*tok){
-    VarScope*sc1=var_scope;
-    TagScope*sc2=tag_scope;
+    Scope*sc=enter_scope();
 
     Node*node=new_node(ND_STMT_EXPR,tok);
     node->body=stmt();
@@ -1001,9 +1107,7 @@ Node*stmt_expr(Token*tok){
         cur=cur->next;
     }
     expect(")");
-
-    var_scope=sc1;
-    tag_scope=sc2;
+    leave_scope(sc);
 
     if(cur->kind!=ND_EXPR_STMT){
         error_tok(cur->tok,"stmt expr returning void is not supported");
@@ -1066,7 +1170,7 @@ Node*primary(){
             if(is_typename()){
                 Type*ty=type_name();
                 expect(")");
-                return new_num(size_of(ty),tok);
+                return new_num(size_of(ty,tok),tok);
             }
             token=tok->next;//"("
         }
@@ -1107,7 +1211,7 @@ Node*primary(){
         token=token->next;
 
         Type*ty=array_of(char_type(),tok->cont_len);
-        Var*var=push_var(new_label(),ty,false);
+        Var*var=push_var(new_label(),ty,false,NULL);
         var->contents=tok->contents;
         var->cont_len=tok->cont_len;
         return new_var(var,tok);
