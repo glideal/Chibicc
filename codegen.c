@@ -2,6 +2,7 @@
 
 int labelseq=1;//0以外の適当な数値
 int brkseq=1;
+int contseq=1;
 char*funcname;
 char*argreg1[]={"dil","sil","dl","cl","r8b","r9b"};
 char*argreg2[]={"di","si","dx","cx","r8w","r9w"};
@@ -357,9 +358,12 @@ void gen(Node*node){
             int seq=labelseq;
             labelseq++;
             int brk=brkseq;
+            int cont=contseq;
             brkseq=seq;
+            contseq=seq;
 
             printf(".Lbegin%d:\n",seq);
+            printf(".L.continue.%d:\n",seq);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
@@ -369,6 +373,7 @@ void gen(Node*node){
             printf(".L.break.%d:\n",seq);
 
             brkseq=brk;
+            contseq=cont;
             return;
         }
         case ND_FOR:{
@@ -376,7 +381,9 @@ void gen(Node*node){
             int seq=labelseq;
             labelseq++;
             int brk=brkseq;
+            int cont=contseq;
             brkseq=seq;
+            contseq=seq;
 
             //(2)labelseq=11,brkseq=10,(seq=10,brk=3)
             if(node->init){
@@ -390,6 +397,7 @@ void gen(Node*node){
                 printf("  je  .L.break.%d\n",seq);
             }
             gen(node->then);
+            printf(".L.continue.%d:\n",seq);
             if(node->inc){
                 gen(node->inc);
             }
@@ -397,6 +405,7 @@ void gen(Node*node){
             printf(".L.break.%d:\n",seq);
 
             brkseq=brk;
+            contseq=cont;
             //(3)labelseq=11,brkseq=3,(seq=10,brk=3)
             //brkseq=brk; の必要性は README.md 参照
             return;
@@ -410,6 +419,17 @@ void gen(Node*node){
         case ND_BREAK:
             if(brkseq==0) error_tok(node->tok,"stray break");//stary..(道から)それる、はくれる
             printf("  jmp .L.break.%d\n",brkseq);
+            return;
+        case ND_CONTINUE:
+            if(contseq==0) error_tok(node->tok,"stray continue");
+            printf("  jmp .L.continue.%d\n",contseq);
+            return;
+        case ND_GOTO:
+            printf("  jmp .L.label.%s.%s\n",funcname,node->label_name);
+            return;
+        case ND_LABEL:
+            printf(".L.label.%s.%s:",funcname,node->label_name);
+            gen(node->lhs);
             return;
         case ND_FUNCALL:{
             int nargs=0;

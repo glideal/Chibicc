@@ -113,6 +113,9 @@ typedef enum{
     ND_SIZEOF,//sizeof演算子.byte数を変えす
     ND_BLOCK,//{...}
     ND_BREAK,
+    ND_CONTINUE,
+    ND_GOTO,
+    ND_LABEL,
     ND_FUNCALL,
     ND_EXPR_STMT,
     ND_STMT_EXPR,
@@ -148,6 +151,9 @@ struct Node{
     //function call
     char*funcname;
     Node*args;
+
+    //goto or labeled statement
+    char*label_name;
 
     Var*var;
     long val;

@@ -772,6 +772,9 @@ bool is_typename(){
 ///    |"for" "(" ( expr? ";" | declaration ) expr? ";" expr? ")" stmt
 ///    |"{" stmt* "}"
 ///    |"break" ";"
+///    |"continue" ";"
+///    |"goto" ident ";"
+///    | ident ":" stmt
 ///    |declaration
 ///    | expr ";"
 Node*stmt(){
@@ -845,6 +848,24 @@ Node*stmt(){
     if(tok=consume("break")){
         expect(";");
         return new_node(ND_BREAK,tok);
+    }
+    if(tok=consume("continue")){
+        expect(";");
+        return new_node(ND_CONTINUE,tok);
+    }
+    if(tok=consume("goto")){
+        Node*node=new_node(ND_GOTO,tok);
+        node->label_name=expect_ident();
+        expect(";");
+        return node;
+    }
+    if(tok=consume_ident()){
+        if(consume(":")){
+            Node*node=new_unary(ND_LABEL,stmt(),tok);
+            node->label_name=strn_dup(tok->str,tok->len);
+            return node;
+        }
+        token=tok;
     }
 
     if(is_typename()){
