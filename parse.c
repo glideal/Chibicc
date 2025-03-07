@@ -683,6 +683,22 @@ Function*function(){
     return fn;
 }
 
+//initializer list can and either with "}" or "," followed by "}" // "}" "}," //following...preposition, noun, adjective
+//to allow a trailing comma(...末尾のカンマ). this function returns true 
+//if it looks like we are at the end of an intializer list
+bool peek_end(){
+    Token*tok=token;
+    bool ret=consume("}")||consume(",")&&consume("}");
+    token=tok;
+    return ret;
+}
+
+void expect_end(){
+    Token*tok=token;
+    if(consume(",")&&consume("}")) return;
+    token=tok;
+    expect("}");
+}
 
 //global-var=type-specifier declarator type-suffix ";"
 void global_var(){
@@ -694,6 +710,113 @@ void global_var(){
     expect(";");
     Var*var=push_var(name,ty,false,tok);
     push_scope(name)->var=var;
+}
+
+typedef struct Designator Designator;
+struct Designator{
+    Designator*next;
+    int idx;
+};
+
+//Creates a node for an array access. for example, if var represents
+//a varable x and desg represents indices 3 and 4, this function
+//return a node representing x[3][4].
+/*
+x[2][3]={{1,2,3},{4,5,6}}のような初期化式の左辺を作る関数
+*/
+Node*new_desg_node2(Var*var,Designator*desg){
+    Token*tok=var->tok;
+    if(!desg) return new_var(var,tok);
+
+    Node*node=new_desg_node2(var,desg->next);
+    node=new_binary(ND_ADD,node,new_num(desg->idx,tok),tok);
+    return new_unary(ND_DEREF,node,tok);
+}
+
+Node*new_desg_node(Var*var,Designator*desg,Node*rhs){
+    Node*lhs=new_desg_node2(var,desg);
+    Node*node=new_binary(ND_ASSIGN,lhs,rhs,rhs->tok);
+    return new_unary(ND_EXPR_STMT,node,rhs->tok);
+}
+
+//lvar-initializer=assign 
+//                | "{" lvar-initializer ("," lvar-initializer)* ","? "}" 
+/*
+an initializer for a local variable is expanded to multiple
+assignments. for example, this function creates the following node
+for x[2][3]={{1,2,3},{4,5,6}}.
+
+x[0][0]=1;
+x[0][1]=2;
+x[0][2]=3;
+x[1][0]=4;
+x[1][1]=5;
+x[1][2]=6;
+*/
+Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
+    Token*tok=consume("{");
+    if(!tok){
+        /*
+        cur=|1|
+            |1|...|1|_|_|_|
+        */
+        cur->next=new_desg_node(var,desg,assign());
+        /*
+        cur=|1|
+            |1|...|1|_|_|_|->next=|2|...|2|_|_|_|
+        */
+        return cur->next;//curに返す
+        /*
+        cur=|2|
+            |1|...|1|_|_|_|->next=|2|...|2|_|_|_|        
+            
+        リストの先頭アドレスはdeclarationのheadが保存している
+        */
+    }
+    //initialize array variable
+    if(ty->kind==TY_ARRAY){
+        int i=0;
+
+        do{
+            Designator desg2={desg,i++};
+            cur=lvar_initializer(cur,var,ty->base,&desg2);
+            /*
+            ex)x[2][3]={{1,2,3},{4,5,6}}
+            desg2(1)={NULL,0}
+                desg2(1-1)={&desg2(1),0}
+                cur=new_desg_node(var,&desg2(1-1),assign()..."1")
+                   ={ND_EXPR_STMT}
+                        ->lhs={ND_ASSIGN}
+                                ->lhs={ND_DEREF}
+                                        ->lhs={ND_ADD}
+                                            ->lhs={ND_DEREF}
+                                                ->lhs={ND_ADD}
+                                                    ->lhs={ND_VAR}
+                                                    ->rhs={ND_NUM}...0
+                                            ->rhs={ND_NUM}...0
+                                ->rhs={ND_NUM}...1
+                
+                desg2(1-1)={&desg2(1),1}
+                cur=new_desg_node(var,&desg2(1-1),assign()..."2")
+                   ={ND_EXPR_STMT}
+                        ->lhs={ND_ASSIGN}
+                                ->lhs={ND_DEREF}
+                                        ->lhs={ND_ADD}
+                                            ->lhs={ND_DEREF}
+                                                ->lhs={ND_ADD}
+                                                    ->lhs={ND_VAR}
+                                                    ->rhs={ND_NUM}...1
+                                            ->rhs={ND_NUM}...0
+                                ->rhs={ND_NUM}...2
+                ...
+            */
+        }while(!peek_end()&&consume(","));
+
+        expect_end();
+        return cur;
+    }
+
+    error_tok(tok,"invalid array initializer");
 }
 
 //declaration=type-specifier declarator type-suffix ("=" expr)?";"
@@ -750,13 +873,20 @@ Node*declaration(){
     if(consume(";")){//declaration without assignment
         return new_node(ND_NULL,tok);
     }
+    //so far it's a declaration
+    //(Type*)ty, var だけ決定している状態
 
+
+    //from here on, assignment 
     expect("=");
-    Node*lhs=new_var(var,tok);
-    Node*rhs=expr();
+
+    Node head;
+    head.next=NULL;
+    lvar_initializer(&head,var,var->ty,NULL);
     expect(";");
-    Node*node=new_binary(ND_ASSIGN,lhs,rhs,tok);
-    return new_unary(ND_EXPR_STMT,node,tok);
+    Node*node=new_node(ND_BLOCK,tok);
+    node->body=head.next;
+    return node;
 }
 
 Node*read_expr_stmt(){
@@ -1225,6 +1355,13 @@ Node*postfix(){
     for(;;){
         /*
         y[3][5]==*(*(y+3)+5)
+        node={ND_DEREF}
+                ->lha={ND_ADD}
+                        ->lhs{ND_DEREF}
+                            ->lhs={ND_ADD}
+                                    ->lhs={ND_VAR}...x
+                                    ->rhs={ND_NUM}...3
+                        ->rhs={ND_NUM}...5
         */
         if(tok=consume("[")){
             Node*exp=new_binary(ND_ADD,node,expr(),tok);
