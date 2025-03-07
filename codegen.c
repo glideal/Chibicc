@@ -233,10 +233,23 @@ void gen(Node*node){
         case ND_A_SUB:
         case ND_A_MUL:
         case ND_A_DIV:
+        case ND_A_SHIFT_L:
+        case ND_A_SHIFT_R:
             gen_lval(node->lhs);
             printf("  push [rsp]\n");
             load(node->lhs->ty);
-            gen(node->rhs);
+            /*//x+=2+3
+            |_|<-address of x
+            |_|<-x
+            |_|
+            */
+            gen(node->rhs);//node-rhs..ND_ADD (2+3)
+            /*//x+=2+3
+            |_|<-address of x
+            |_|<-x
+            |_|<-5 (==2+3)
+            |_|
+            */
             printf("  pop rdi\n");
             printf("  pop rax\n");
 
@@ -259,6 +272,14 @@ void gen(Node*node){
                 case ND_A_DIV:
                     printf("  cqo\n");
                     printf("  idiv rdi\n");
+                    break;
+                case ND_A_SHIFT_L:
+                    printf("  mov cl, dil\n");//CL は RCX の下位 8bit
+                    printf("  shl rax, cl\n");//shl...shift logical left
+                    break;
+                case ND_A_SHIFT_R:
+                    printf("  mov cl, dil\n");
+                    printf("  sar rax, cl\n");//sar...shift arithmetic right
                     break;
             }
             printf("  push rax\n");
@@ -554,6 +575,14 @@ void gen(Node*node){
             break;
         case ND_BITXOR:
             printf("  xor rax, rdi\n");
+            break;
+        case ND_SHIFT_L:
+            printf("  mov cl, dil\n");
+            printf("  shl rax, cl\n");
+            break;
+        case ND_SHIFT_R:
+            printf("  mov cl, dil\n");
+            printf("  sar rax, cl\n");
             break;
         case ND_EQ:
             /*

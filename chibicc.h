@@ -87,6 +87,8 @@ typedef enum{
     ND_BITXOR,
     ND_LONGAND,
     ND_LONGOR,
+    ND_SHIFT_L,// <<
+    ND_SHIFT_R,// >>
     ND_EQ,
     ND_NE,//!=
     ND_LT,//<
@@ -100,6 +102,8 @@ typedef enum{
     ND_A_SUB,// -=
     ND_A_MUL,// *=
     ND_A_DIV,// /=
+    ND_A_SHIFT_L,// <<=
+    ND_A_SHIFT_R,// >>=
     ND_COMMA,
     ND_MEMBER,//.(struct member access)
     ND_ADDR,//&

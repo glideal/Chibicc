@@ -197,6 +197,8 @@ void visit(Node*node){
             node->ty=node->lhs->ty;
             return;
         case ND_ASSIGN:
+        case ND_SHIFT_L:
+        case ND_SHIFT_R:
         case ND_PRE_INC:
         case ND_PRE_DEC:
         case ND_POST_INC:
@@ -205,6 +207,8 @@ void visit(Node*node){
         case ND_A_SUB:
         case ND_A_MUL:
         case ND_A_DIV:
+        case ND_A_SHIFT_L:
+        case ND_A_SHIFT_R:
         case ND_BITNOT:
             node->ty=node->lhs->ty;
             return;

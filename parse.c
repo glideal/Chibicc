@@ -171,6 +171,7 @@ Node*bitor();
 Node*bitxor();
 Node*equality();
 Node*relational();
+Node*shift();
 Node*add();
 Node*mul();
 Node*cast();
@@ -936,7 +937,7 @@ Node*expr(){
 }
 
 //assign=longor(assiign-op assign)?
-//assign-op="="|"+="|"-="|"*="|"/="
+//assign-op= "="|"+="|"-="|"*="|"/="|"<<="|">>="
 Node*assign(){
     //printf("assign\n");
     Node*node=longor();
@@ -955,6 +956,12 @@ Node*assign(){
     }
     if(tok=consume("/=")){
         node=new_binary(ND_A_DIV,node,assign(),tok);
+    }
+    if(tok=consume("<<=")){
+        node=new_binary(ND_A_SHIFT_L,node,assign(),tok);
+    }
+    if(tok=consume(">>=")){
+        node=new_binary(ND_A_SHIFT_R,node,assign(),tok);
     }
     return node;
 }
@@ -1026,22 +1033,38 @@ Node*equality(){
     }
 }
 
-//relatonal=add("<" add | "<=" add | ">" add | ">=" add)*
+//relatonal=shift("<" shift | "<=" shift | ">" shift | ">=" shift)*
 Node*relational(){
     //printf("relational\n");
-    Node*node=add();
+    Node*node=shift();
     Token*tok;
 
     if(tok=consume("<")){
-        node=new_binary(ND_LT,node,add(),tok);
+        node=new_binary(ND_LT,node,shift(),tok);
     }else if(tok=consume("<=")){
-        node=new_binary(ND_LE,node,add(),tok);
+        node=new_binary(ND_LE,node,shift(),tok);
     }else if(tok=consume(">")){
-        node=new_binary(ND_LT,add(),node,tok);
+        node=new_binary(ND_LT,shift(),node,tok);
     }else if(tok=consume(">=")){
-        node=new_binary(ND_LE,add(),node,tok);
+        node=new_binary(ND_LE,shift(),node,tok);
     }else{
         return node;
+    }
+}
+
+//shift=add ( "<<" add | ">>" add )*
+Node*shift(){
+    Node*node=add();
+    Token*tok;
+
+    for(;;){
+        if(tok=consume("<<")){
+            node=new_binary(ND_SHIFT_L,node,add(),tok);
+        }else if(tok=consume(">>")){
+            node=new_binary(ND_SHIFT_R,node,add(),tok);
+        }else{
+            return node;
+        }
     }
 }
 
