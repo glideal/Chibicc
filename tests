@@ -399,6 +399,11 @@ a;");
     assert(3,0?2:3,"0?2:3");
     assert(2,1?2:3,"1?2:3");
 
+    assert(10,({enum{ ten=1+2+3+4,}; ten; }),"enum{ ten=1+2+3+4,}; ten; ");
+    assert(1,({int i=0;switch(3){case 5-2+0*3: i++;} i;}),"int i=0;switch(3){case 5-2+0*3: i++;} i;");
+    assert(3,({char x[1+2];sizeof x;}),"char x[1+2];sizeof x;");
+    assert(2,({char x[1?2:3];sizeof x;}),"char x[1?2:3];sizeof x;");
+
 
     printf("ok\n");
     return 0;
