@@ -305,6 +305,88 @@ e: i++;
 f: i++;
 i; ");
 
+    assert(111,({
+        int x=1;
+        int a;
+        switch(x){
+            case 0:a=0;
+            case 1:a=1;
+            case 2:a=11;
+            case 3:a=111;
+        }
+        a;
+    }),"
+int x=1;
+int a;
+switch(x){
+    case 0:a=0;
+    case 1:a=1;
+    case 2:a=11;
+    case 3:a=111;
+}
+a;");
+    assert(11,({
+        int x=1;
+        int a;
+        switch(x){
+            case 0:a=0;
+            case 1:a=1;
+            case 2:a=11;break;
+            case 3:a=111;
+        }
+        a;
+    }),"
+int x=1;
+int a;
+switch(x){
+    case 0:a=0;
+    case 1:a=1;
+    case 2:a=11;break;
+    case 3:a=111;
+}
+a;");
+    assert(1,({
+        int x=1;
+        int a;
+        switch(x){
+            case 0:a=0;
+            case 1:a=1;break;
+            case 2:a=11;
+            case 3:a=111;
+        }
+        a;
+    }),"
+int x=1;
+int a;
+switch(x){
+    case 0:a=0;
+    case 1:a=1;break;
+    case 2:a=11;
+    case 3:a=111;
+}
+a;");
+    assert(111,({
+        int x=5;
+        int a;
+        switch(x){
+            case 0:a=0;
+            case 1:a=1;break;
+            case 2:a=11;
+            default:a=111;
+        }
+        a;
+    }),"
+int x=5;
+int a;
+switch(x){
+    case 0:a=0;
+    case 1:a=1;break;
+    case 2:a=11;
+    default:a=111;
+}
+a;");
+
+
     printf("ok\n");
     return 0;
 }

@@ -31,6 +31,8 @@ VarScope*var_scope;
 TagScope*tag_scope;
 int scope_depth;
 
+Node*current_switch;
+
 Scope*enter_scope(){
     Scope*sc=calloc(1,sizeof(Scope));
     sc->var_scope=var_scope;
@@ -768,6 +770,9 @@ bool is_typename(){
 
 ///stmt="return" expr ";" | expr ";"
 ///    |"if" "(" expr ")" stmt ("else" stmt)?
+///    |"switch" "(" expr ")" stmt
+///    |"case" num ":" stmt
+///    |"default" ":" stmt
 ///    |"while" "(" expr ")" stmt
 ///    |"for" "(" ( expr? ";" | declaration ) expr? ";" expr? ")" stmt
 ///    |"{" stmt* "}"
@@ -794,6 +799,49 @@ Node*stmt(){
         if(consume("else")){
             node->els=stmt();
         }
+        return node;
+    }
+    if(tok=consume("switch")){
+        Node*node=new_node(ND_SWITCH,tok);
+        expect("(");
+        node->cond=expr();
+        expect(")");
+
+        Node*sw=current_switch;
+        current_switch=node;
+        node->then=stmt();
+        current_switch=sw;
+        return node;
+    }
+    if(tok=consume("case")){
+        if(!current_switch) error_tok(tok,"stray case");
+
+        Node*node=new_node(ND_CASE,tok);
+        node->val=expect_number();
+        expect(":");
+
+        node->lhs=stmt();
+        node->case_next=current_switch->case_next;//(1)
+        current_switch->case_next=node;//(2)
+        /*
+        current_switch->case_next==>|1|
+        node==>|2|
+        (1)
+        current_switch->case_next==>|1|
+        node==>|2|->case_next    ==>|1|
+        (2)
+        current_switch->case_next==>
+        =>node==>|2|->case_next    ==>|1| |1|...NULL
+        */
+        return node;
+    }
+    if(tok=consume("default")){
+        if(!current_switch) error_tok(tok,"stray default");
+
+        expect(":");
+
+        Node*node=new_unary(ND_CASE,stmt(),tok);
+        current_switch->default_case=node;//current_switch は ND_SWITCH の node のアドレス
         return node;
     }
     if(tok=consume("while")){

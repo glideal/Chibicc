@@ -354,6 +354,43 @@ void gen(Node*node){
             }
             return;
         }
+        case ND_SWITCH:{
+            int seq=labelseq++;
+            int brk=brkseq;
+            brkseq=seq;
+            node->case_label=seq;
+
+            gen(node->cond);
+            printf("  pop rax\n");
+
+            for(Node*n=node->case_next;n;n=n->case_next){
+                //ND_CASE で使う
+                n->case_label=labelseq++;
+                n->case_end_label=seq;
+
+                printf("  cmp rax, %ld\n",n->val);
+                printf("  je .L.case.%d\n",n->case_label);
+            }
+            if(node->default_case){
+                node->default_case->case_label=labelseq;
+                node->default_case->case_end_label=seq;
+
+                printf("  jmp .L.case.%d\n",labelseq++);
+            }
+
+            printf("  jmp .L.break.%d\n",seq);
+            gen(node->then);
+            printf(".L.break.%d:\n",seq);
+
+            brkseq=brk;
+            return;
+        }
+        case ND_CASE:
+            printf(".L.case.%d:\n",node->case_label);
+            gen(node->lhs);
+            //これはbreakを書いた時の挙動であって、switch-case構文のデフォルトではないよね？？
+            //printf("  jmp .L.break.%d\n",node->case_end_label);
+            return;
         case ND_WHILE:{
             int seq=labelseq;
             labelseq++;
