@@ -73,6 +73,7 @@ long power_of_2(long n){
 }
 
 char char_fn();
+void void_fn(){}
 
 int inc(){
     static int num;
@@ -385,6 +386,8 @@ switch(x){
     default:a=111;
 }
 a;");
+
+    void_fn();
 
 
     printf("ok\n");
