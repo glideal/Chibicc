@@ -164,6 +164,7 @@ bool is_typename();
 Node*stmt();//
 Node*expr();
 Node*assign();
+Node*conditional();
 Node*longor();
 Node*longand();
 Node*bitand();
@@ -936,11 +937,11 @@ Node*expr(){
     return node;
 }
 
-//assign=longor(assiign-op assign)?
+//assign=conditional(assiign-op assign)?
 //assign-op= "="|"+="|"-="|"*="|"/="|"<<="|">>="
 Node*assign(){
     //printf("assign\n");
-    Node*node=longor();
+    Node*node=conditional();
     Token*tok;
     if(tok=consume("=")){
         node=new_binary(ND_ASSIGN,node,assign(),tok);
@@ -964,6 +965,20 @@ Node*assign(){
         node=new_binary(ND_A_SHIFT_R,node,assign(),tok);
     }
     return node;
+}
+
+//conditional=longor ( "?" expr ":" conditional )?
+Node*conditional(){
+    Node*node=longor();
+    Token*tok=consume("?");
+    if(!tok) return node;
+
+    Node*ternary=new_node(ND_TERNARY,tok);
+    ternary->cond=node;
+    ternary->then=expr();
+    expect(":");
+    ternary->els=conditional();
+    return ternary;
 }
 
 //longor=lomgand("||" longand)*

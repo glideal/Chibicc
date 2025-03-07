@@ -94,6 +94,7 @@ typedef enum{
     ND_LT,//<
     ND_LE,//<=
     ND_ASSIGN,
+    ND_TERNARY,//?: //ternary...三項
     ND_PRE_INC,//++x
     ND_PRE_DEC,//--x
     ND_POST_INC,//x++
