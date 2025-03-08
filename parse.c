@@ -771,6 +771,37 @@ if an initializer list is shorter than an array,
 excess array elements are initialized with 0.
 */
 Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
+    if(ty->kind==TY_ARRAY && ty->base->kind==TY_CHAR 
+        && token->kind==TK_STR){
+            /*
+            a char array can be initialized by a string literal.
+            for example, 
+            'char x[4]="foo";' is equivalent to 'char x[4]={'f','o','o','\0'}' .
+            */
+            //initialize a char array with a string literal
+            Token*tok=token;
+            token=token->next;
+
+            int len=(ty->array_size<tok->cont_len)?ty->array_size:tok->cont_len; 
+            //     =min( ty->array_size , tok->cont_len )
+            int i;
+
+            for(i=0;i<len;i++){
+                Designator desg2={desg,i};
+                Node*rhs=new_num(tok->contents[i],tok);
+                cur->next=new_desg_node(var,&desg2,rhs);
+                cur=cur->next;
+            }
+
+            //initialize excess array
+            for(;i<ty->array_size;i++){
+                Designator desg2={desg,i};
+                cur=lvar_init_zero(cur,var,ty->base,&desg2);
+            }
+
+            return cur;
+        }
+
     Token*tok=consume("{");
     if(!tok){
         /*
