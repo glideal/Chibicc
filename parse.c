@@ -383,11 +383,11 @@ Type*type_suffix(Type*ty){
 
     int sz=0;
     bool is_incomplete=true;
-    if(!consume("]")){
-        sz=const_expr();
-        is_incomplete=false;
-        expect("]");
-    }
+        if(!consume("]")){
+            sz=const_expr();
+            is_incomplete=false;
+            expect("]");
+        }
     ty=type_suffix(ty);
     ty=array_of(ty,sz);
     ty->is_incomplete=is_incomplete;
@@ -722,7 +722,8 @@ struct Designator{
 //a varable x and desg represents indices 3 and 4, this function
 //return a node representing x[3][4].
 /*
-x[2][3]={{1,2,3},{4,5,6}}のような初期化式の左辺を作る関数
+int x[2][3]={{1,2,3},{4,5,6}} について
+x[1][1]=5 のような初期化式の左辺を作る関数
 */
 Node*new_desg_node2(Var*var,Designator*desg){
     Token*tok=var->tok;
@@ -739,6 +740,19 @@ Node*new_desg_node(Var*var,Designator*desg,Node*rhs){
     return new_unary(ND_EXPR_STMT,node,rhs->tok);
 }
 
+Node*lvar_init_zero(Node*cur,Var*var,Type*ty,Designator*desg){
+    if(ty->kind==TY_ARRAY){
+        for(int i=0;i<ty->array_size;i++){
+            Designator desg2={desg,i};//i++ は間違えだよね??
+            cur=lvar_init_zero(cur,var,ty->base,&desg2);
+        }
+        return cur;
+    }
+
+    cur->next=new_desg_node(var,desg,new_num(0,token));
+    return cur->next;
+}
+
 //lvar-initializer=assign 
 //                | "{" lvar-initializer ("," lvar-initializer)* ","? "}" 
 /*
@@ -752,6 +766,9 @@ x[0][2]=3;
 x[1][0]=4;
 x[1][1]=5;
 x[1][2]=6;
+
+if an initializer list is shorter than an array, 
+excess array elements are initialized with 0.
 */
 Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
     Token*tok=consume("{");
@@ -775,10 +792,24 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
     }
     //initialize array variable
     if(ty->kind==TY_ARRAY){
+        /*
+        ex)x[2][3]
+        node={TY_ARRAY}
+                ->base={TY_ARRAY}
+                    ->base={TY_INT}...x
+                    ->array_size...3
+                ->array_size...2
+        */
         int i=0;
 
         do{
             Designator desg2={desg,i++};
+            //x[0][1] に代入したい場合
+            //desg2
+            //  .next
+            //      ->next...NULL
+            //      ->idx...0
+            //  .idx...1
             cur=lvar_initializer(cur,var,ty->base,&desg2);
             /*
             ex)x[2][3]={{1,2,3},{4,5,6}}
@@ -809,8 +840,21 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
                                             ->rhs={ND_NUM}...0
                                 ->rhs={ND_NUM}...2
                 ...
+
+                //cur-1 (&head)
+                //  ->next=cur-2
+                //          ->next ...
             */
         }while(!peek_end()&&consume(","));
+
+        //set excess array elements to zero.
+        /*
+        ex)int x[2][3]={{1,2}}; ... x[2][3]={{1,2,0},{0,0,0}};
+        */
+        for(;i<ty->array_size;i++){
+            Designator desg2={desg,i};
+            cur=lvar_init_zero(cur,var,ty->base,&desg2);
+        }
 
         expect_end();
         return cur;

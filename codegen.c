@@ -482,7 +482,9 @@ void gen(Node*node){
         }
         case ND_BLOCK:
         case ND_STMT_EXPR:
+            static int i=0;
             for(Node*n=node->body;n;n=n->next){
+                printf(".Lcccccc%d:\n",i++);
                 gen(n);
             }
             return;
