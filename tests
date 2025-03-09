@@ -422,6 +422,10 @@ a;");
     assert(16,({int x[]={1,2,3,4}; sizeof x; }),"int x[]={1,2,3,4}; sizeof x; ");
     assert(4,({char x[]="foo"; sizeof x; }),"char x[]=\"foo\"; sizeof x; ");
 
+    assert(2,({struct{char a;int b;int c;}x={1,2}; x.b; }),"struct{int a;int b;int c;}x={1,2}; x.b; ");
+    assert(0,({struct{char a;int b;int c;}x={1,2}; x.c; }),"struct{int a;int b;int c;}x={1,2}; x.c; ");
+    assert(2,({struct{int a;int b;}x[2]={{1,2},{3,4}}; x[0].b;}),"struct{int a;int b;}x[2]={{1,2},{3,4}}; x[0].b;");
+
     printf("ok\n");
     return 0;
 }

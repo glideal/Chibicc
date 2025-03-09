@@ -716,6 +716,7 @@ typedef struct Designator Designator;
 struct Designator{
     Designator*next;
     int idx;
+    Member*mem;//struct
 };
 
 //Creates a node for an array access. for example, if var represents
@@ -730,6 +731,11 @@ Node*new_desg_node2(Var*var,Designator*desg){
     if(!desg) return new_var(var,tok);
 
     Node*node=new_desg_node2(var,desg->next);
+    if(desg->mem){
+        node=new_unary(ND_MEMBER,node,desg->mem->tok);
+        node->member_name=desg->mem->name;
+        return node;
+    }
     node=new_binary(ND_ADD,node,new_num(desg->idx,tok),tok);
     return new_unary(ND_DEREF,node,tok);
 }
@@ -800,7 +806,7 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
             int i;
 
             for(i=0;i<len;i++){
-                Designator desg2={desg,i};
+                Designator desg2={desg,i,NULL};
                 Node*rhs=new_num(tok->contents[i],tok);
                 cur->next=new_desg_node(var,&desg2,rhs);
                 cur=cur->next;
@@ -808,7 +814,7 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
 
             //initialize excess array
             for(;i<ty->array_size;i++){
-                Designator desg2={desg,i};
+                Designator desg2={desg,i,NULL};
                 cur=lvar_init_zero(cur,var,ty->base,&desg2);
             }
 
@@ -847,7 +853,7 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
         int i=0;
 
         do{
-            Designator desg2={desg,i++};
+            Designator desg2={desg,i++,NULL};
             //x[0][1] に代入したい場合
             //desg2
             //  .next
@@ -891,20 +897,39 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
             */
         }while(!peek_end()&&consume(","));
 
+        expect_end();
+
         //set excess array elements to zero.
         /*
         ex)int x[2][3]={{1,2}}; ... x[2][3]={{1,2,0},{0,0,0}};
         */
         for(;i<ty->array_size;i++){
-            Designator desg2={desg,i};
+            Designator desg2={desg,i,NULL};
             cur=lvar_init_zero(cur,var,ty->base,&desg2);
         }
-
-        expect_end();
 
         if(ty->is_incomplete){
             ty->array_size=i;
             ty->is_incomplete=false;
+        }
+
+        return cur;
+    }
+
+    if(ty->kind==TY_STRUCT){
+        Member*mem=ty->members;
+        do{
+            Designator desg2={desg,0,mem};
+            cur=lvar_initializer(cur,var,mem->ty,&desg2);
+            mem=mem->next;
+        }while(!peek_end()&&consume(","));
+
+        expect_end();
+
+        //set excess struct elements to zero
+        for(;mem;mem=mem->next){
+            Designator desg2={desg,0,mem};
+            cur=lvar_init_zero(cur,var,mem->ty,&desg2);
         }
 
         return cur;
