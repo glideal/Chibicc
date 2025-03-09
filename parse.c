@@ -767,8 +767,16 @@ x[1][0]=4;
 x[1][1]=5;
 x[1][2]=6;
 
+There are a few special rules 
+for ambiguous iitializers and shorthand notations.
+//ambiguous...曖昧な, shorthand...速記, notation...表記法
+
 if an initializer list is shorter than an array, 
 excess array elements are initialized with 0.
+
+if a rhs is an imcomplete array, its size is set by counting 
+the number of items on the rhs. 
+for example, " 'x' in 'int x[]={1,2,3}; " has type 'int[3]' . '
 */
 Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
     if(ty->kind==TY_ARRAY && ty->base->kind==TY_CHAR 
@@ -781,6 +789,11 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
             //initialize a char array with a string literal
             Token*tok=token;
             token=token->next;
+
+            if(ty->is_incomplete){
+                ty->array_size=tok->cont_len;
+                ty->is_incomplete=false;
+            }
 
             int len=(ty->array_size<tok->cont_len)?ty->array_size:tok->cont_len; 
             //     =min( ty->array_size , tok->cont_len )
@@ -888,6 +901,12 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
         }
 
         expect_end();
+
+        if(ty->is_incomplete){
+            ty->array_size=i;
+            ty->is_incomplete=false;
+        }
+
         return cur;
     }
 
