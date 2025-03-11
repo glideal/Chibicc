@@ -10,6 +10,7 @@
 
 typedef struct Type Type;
 typedef struct Member Member;
+typedef struct Initializer Initializer;
 
 
 //
@@ -68,8 +69,7 @@ struct Var{
     int offset;//local variable
 
     //global variables
-    char*contents;
-    int cont_len;
+    Initializer*initializer;
 };
 typedef struct VarList VarList;
 struct VarList{
@@ -170,6 +170,19 @@ struct Node{
 
     Var*var;
     long val;
+};
+
+//Global variable initializer. 
+//global variables can be initialized
+//either by a constant expression or by a pointer to another global variable.
+//
+struct Initializer{
+    Initializer*next;
+    //constant expression
+    int sz;
+    long val;
+    //reference to another global variables
+    char*label;
 };
 
 //function definition

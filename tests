@@ -8,6 +8,14 @@ block comments
 int g1;
 int g2[4];
 
+char g3=3;
+short g4=4;
+int g5=5;
+long g6=6;
+int *g7=&g5;
+char*g8="abc";
+//int g9=g5*2;
+
 int assert(long expected,long actual,char*code){
     if(expected==actual){
         printf("%s => %ld\n",code,actual);
@@ -425,6 +433,21 @@ a;");
     assert(2,({struct{char a;int b;int c;}x={1,2}; x.b; }),"struct{int a;int b;int c;}x={1,2}; x.b; ");
     assert(0,({struct{char a;int b;int c;}x={1,2}; x.c; }),"struct{int a;int b;int c;}x={1,2}; x.c; ");
     assert(2,({struct{int a;int b;}x[2]={{1,2},{3,4}}; x[0].b;}),"struct{int a;int b;}x[2]={{1,2},{3,4}}; x[0].b;");
+
+    // char g3=3;
+    // short g4=4;
+    // int g5=5;
+    // long g6=6;
+    // int *g7=&g5;
+    // char*g8="abc";
+    // //int g9=g5*2;
+    assert(3,g3,"g3");
+    assert(4,g4,"g4");
+    assert(5,g5,"g5");
+    assert(6,g6,"g6");
+    assert(5,*g7,"*g5");
+    assert('b',g8[1],"g8[1]");
+    // assert(10,g9,"g9");
 
     printf("ok\n");
     return 0;

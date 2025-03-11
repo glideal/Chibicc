@@ -163,6 +163,7 @@ Node*declaration();//
 bool is_typename();
 Node*stmt();//
 Node*expr();
+long eval(Node*node);
 long const_expr();
 Node*assign();
 Node*conditional();
@@ -700,16 +701,86 @@ void expect_end(){
     expect("}");
 }
 
-//global-var=type-specifier declarator type-suffix ";"
+//global initializer
+/*
+gvar_init_string は primary() で使う
+
+Node*primary(){
+    ...
+    if(tok->kind==TK_STR){
+        ...
+        var->initializer=gvar_init_string(tok->contents,tok->cont_len);
+        return new_var(var,tok);
+    }
+    ...
+}
+*/
+Initializer*new_init_val(Initializer*cur,int sz,int val);
+
+Initializer*gvar_init_string(char*p,int len){
+    Initializer head;
+    head.next=NULL;
+    Initializer*cur=&head;
+
+    for(int i=0;i<len;i++){
+        cur=new_init_val(cur,1,p[i]);   
+    }
+    return head.next;
+}
+
+
+Initializer*new_init_val(Initializer*cur,int sz,int val){
+    Initializer*init=calloc(1,sizeof(Initializer));
+    init->sz=sz;
+    init->val=val;
+    cur->next=init;
+    return init;
+}
+
+Initializer*new_init_label(Initializer*cur, char*label){
+    Initializer*init=calloc(1,sizeof(Initializer));
+    init->label=label;
+    cur->next=init;
+    return init;
+}
+
+//global変数の右辺に変数は来ないらしい。。。 変数のアドレスは来るのに。。。
+//これは変数の中身は動的に決定するが、その変数のアドレスはコンパイル時に設定されるからだろうか
+Initializer*gvar_initializer(Initializer*cur,Type*ty){
+    Token*tok=token;
+    Node*expr=conditional();//代入式の右辺
+
+    if(expr->kind==ND_ADDR){
+        if(expr->lhs->kind!=ND_VAR)error_tok(tok,"invalid initializer");
+        return new_init_label(cur,expr->lhs->var->name);
+    }
+
+    //initialize string variable like 'char*gl="abc";'
+    if(expr->kind==ND_VAR
+        &&expr->var->ty->kind==TY_ARRAY) 
+        return new_init_label(cur,expr->var->name);
+
+    return new_init_val(cur,size_of(ty,token),eval(expr));
+}
+
+//global-var=type-specifier declarator type-suffix ("=" gvar-initializer)? ";"
 void global_var(){
     Type*ty=type_specifier();
     char*name=NULL;
     Token*tok=token;
     ty=declarator(ty,&name);
     ty=type_suffix(ty);
-    expect(";");
+    
     Var*var=push_var(name,ty,false,tok);
     push_scope(name)->var=var;
+
+    if(consume("=")){
+        Initializer head;
+        head.next=NULL;
+        gvar_initializer(&head,ty);
+        var->initializer=head.next;
+    }
+    expect(";");
 }
 
 typedef struct Designator Designator;
@@ -1637,8 +1708,9 @@ Node*primary(){
 
         Type*ty=array_of(char_type(),tok->cont_len);
         Var*var=push_var(new_label(),ty,false,NULL);
-        var->contents=tok->contents;
-        var->cont_len=tok->cont_len;
+        // var->contents=tok->contents;
+        // var->cont_len=tok->cont_len;
+        var->initializer=gvar_init_string(tok->contents,tok->cont_len);
         return new_var(var,tok);
     }
     if(tok->kind!=TK_NUM){
