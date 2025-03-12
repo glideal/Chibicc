@@ -501,6 +501,12 @@ a;");
     assert(2,val[0],"val[0]");
     assert(3,val[1],"val[1]");
 
+    assert(1,({int num[2]={1,2,3}; num[0]; }),"num[2]={1,2,3}; num[0]; ");
+    /*
+    {1,2,3} の 3 は無視される。
+    */
+    //assert(3,({int num[2]={1,2,3}; num[2]; }),"num[2]={1,2,3}; num[2]; ");
+
 
 
     printf("ok\n");

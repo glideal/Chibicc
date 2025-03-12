@@ -43,6 +43,7 @@ void error(char*fmt,...);
 void error_at(char*loc,char*fmt,...);
 char*strn_dup(char*p,int len);
 void error_tok(Token*tok,char*fmt,...);
+void warn_tok(Token*tok,char*fmt,...);
 Token*peek(char*s);
 Token*consume(char*s);
 Token*consume_ident();

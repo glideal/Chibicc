@@ -51,7 +51,6 @@ void verror_at(char*loc,char*fmt,va_list ap){
     vfprintf(stderr,fmt,ap);
     fprintf(stderr,"\n");
 
-    exit(1);
 }
 
 void error_at(char*loc,char*fmt,...){
@@ -59,6 +58,7 @@ void error_at(char*loc,char*fmt,...){
     va_start(ap,fmt);
 
     verror_at(loc,fmt,ap);
+    exit(1);
 }
 
 void error_tok(Token*tok,char*fmt,...){
@@ -66,10 +66,21 @@ void error_tok(Token*tok,char*fmt,...){
     va_start(ap,fmt);
     if(tok){
         verror_at(tok->str,fmt,ap);
+        exit(1);
     }else{
         vfprintf(stderr,fmt,ap);
         fprintf(stderr,"\n");
         exit(1);
+    }
+}
+
+void warn_tok(Token*tok,char*fmt,...){
+    va_list ap;
+    va_start(ap,fmt);
+    if(tok) verror_at(tok->str,fmt,ap);
+    else{
+        vfprintf(stderr,fmt,ap);
+        fprintf(stderr,"\n");
     }
 }
 

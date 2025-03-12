@@ -697,11 +697,11 @@ bool peek_end(){
     return ret;
 }
 
-void expect_end(){
+bool consume_end(){
     Token*tok=token;
-    if(consume(",")&&consume("}")) return;
+    if(consume("}")||consume(",")&&consume("}")) return true;
     token=tok;
-    expect("}");
+    return false;
 }
 
 //global initializer
@@ -795,6 +795,22 @@ Initializer*emit_struct_padding(Initializer*cur,Type*parent,Member*mem){
     return cur;
 }
 
+void skip_excess_elements2(){
+    while(1){
+        if(consume("{")) skip_excess_elements2();
+        else assign();
+
+        if(consume_end()) return;
+        expect(",");
+    }
+}
+
+void skip_excess_elements(){
+    expect(",");
+    warn_tok(token,"excess elements in initializer");
+    skip_excess_elements2();
+}
+
 //global変数の右辺に変数は来ないらしい。。。 変数のアドレスは来るのに。。。
 //これは変数の中身は動的に決定するが、その変数のアドレスはコンパイル時に設定されるからだろうか
 Initializer*gvar_initializer(Initializer*cur,Type*ty){
@@ -809,7 +825,7 @@ Initializer*gvar_initializer(Initializer*cur,Type*ty){
             cur=gvar_initializer(cur,ty->base);
             i++;
         }while(i<limit && !peek_end() && consume(","));
-        if(open) expect_end();
+        if(open && !consume_end()) skip_excess_elements();
         //set excess array elements to zero
         cur=new_init_zero(cur,size_of(ty->base,tok)*(ty->array_size-i));
 
@@ -829,7 +845,7 @@ Initializer*gvar_initializer(Initializer*cur,Type*ty){
             cur=emit_struct_padding(cur,ty,mem);
             mem=mem->next;
         }while(mem && !peek_end() && consume(","));
-        if(open) expect_end();
+        if(open && !consume_end()) skip_excess_elements();
         //set excess struct elements to zero
         if(mem){
             int sz=size_of(ty,tok)-mem->offset;
@@ -1046,7 +1062,7 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
             */
         }while(i<limit&&!peek_end()&&consume(","));
 
-        if(open) expect_end();
+        if(open && !consume_end()) skip_excess_elements();
 
         //set excess array elements to zero.
         /*
@@ -1074,7 +1090,7 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
             mem=mem->next;
         }while(mem&&!peek_end()&&consume(","));
 
-        if(open) expect_end();
+        if(open && !consume_end()) skip_excess_elements();
 
         //set excess struct elements to zero
         for(;mem;mem=mem->next){
