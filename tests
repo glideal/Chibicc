@@ -25,6 +25,10 @@ struct{int a[2];}g14[2]={1,2,3,4};
 char*g15={"foo"};
 char g16[][4]={'f','o','o',0,'b','a','r',0};
 
+char g17[]  ="foobar";
+char g18[10]="foobar";
+char g19[3] ="foobar";
+
 int assert(long expected,long actual,char*code){
     if(expected==actual){
         printf("%s => %ld\n",code,actual);
@@ -503,11 +507,16 @@ a;");
 
     assert(1,({int num[2]={1,2,3}; num[0]; }),"num[2]={1,2,3}; num[0]; ");
     /*
-    {1,2,3} の 3 は無視される。
+    {1,2,3} の 3 は無視される
     */
     //assert(3,({int num[2]={1,2,3}; num[2]; }),"num[2]={1,2,3}; num[2]; ");
 
-
+    assert( 7,sizeof(g17),"sizeof(g17)");
+    assert(10,sizeof(g18),"sizeof(g18)");
+    assert( 3,sizeof(g19),"sizeof(g19)");
+    assert(0,memcmp(g17,"foobar",7),"memcmp(g17,\"foobar\",7)");
+    assert(0,memcmp(g18,"foobar\0\0\0",10),"memcmp(g17,\"foobar\\0\\0\\0\",10)");
+    assert(0,memcmp(g19,"foo",3),"memcmp(g17,\"foo\",3)");
 
     printf("ok\n");
     return 0;

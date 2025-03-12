@@ -646,7 +646,162 @@ main:
 
 
 ------------------------------------------------------------------------
+グローバル、ローカル変数における文字列。//左辺がアドレス型か、配列型かによるメモリ確保の変化
+=>
+ローカルのchar型配列のみローカル変数的なメモリ配置。それ以外はグローバルな感じ
 
+char*global="abc";
+char gl[]="cd";
+int main(){
+    char*string="bcdef";
+    char str[]="defgh";
+    return str[1];
+}
+
+intel_syntax noprefix
+.data
+.L.date.1:
+  .byte 98  ...'b'
+  .byte 99  ...'c'
+  .byte 100 ...'d'
+  .byte 101 ...'e'
+  .byte 102 ...'f'
+  .byte 0
+gl:
+  .byte 99  ...'c'
+  .byte 100 ...'d'
+  .byte 0
+.L.date.0:
+  .byte 97  ...'a'
+  .byte 98  ...'b'
+  .byte 99  ...'c'
+  .byte 0
+global:
+  .quad .L.date.0
+.text
+.global main
+main:
+  push rbp
+  mov rbp, rsp
+  sub rsp, 16
+.Lcccccc0:
+  lea rax, [rbp-16]
+  push rax
+  mov rax, offset .L.date.1
+  push rax
+  pop rdi
+  pop rax
+  mov [rax], rdi
+  push rdi
+  add rsp, 8
+.Lcccccc1:
+  lea rax, [rbp-6]
+  push rax
+  push 0
+  pop rdi
+  pop rax
+  imul rdi, 1
+  add rax, rdi
+  push rax
+  push 100  ...'d'
+  pop rdi
+  pop rax
+  mov [rax], dil
+  push rdi
+  add rsp, 8
+.Lcccccc2:
+  lea rax, [rbp-6]
+  push rax
+  push 1
+  pop rdi
+  pop rax
+  imul rdi, 1
+  add rax, rdi
+  push rax
+  push 101  ...'e'
+  pop rdi
+  pop rax
+  mov [rax], dil
+  push rdi
+  add rsp, 8
+.Lcccccc3:
+  lea rax, [rbp-6]
+  push rax
+  push 2
+  pop rdi
+  pop rax
+  imul rdi, 1
+  add rax, rdi
+  push rax
+  push 102  ...'f'
+  pop rdi
+  pop rax
+  mov [rax], dil
+  push rdi
+  add rsp, 8
+.Lcccccc4:
+  lea rax, [rbp-6]
+  push rax
+  push 3
+  pop rdi
+  pop rax
+  imul rdi, 1
+  add rax, rdi
+  push rax
+  push 103  ...'g'
+  pop rdi
+  pop rax
+  mov [rax], dil
+  push rdi
+  add rsp, 8
+.Lcccccc5:
+  lea rax, [rbp-6]
+  push rax
+  push 4
+  pop rdi
+  pop rax
+  imul rdi, 1
+  add rax, rdi
+  push rax
+  push 104  ...'h'
+  pop rdi
+  pop rax
+  mov [rax], dil
+  push rdi
+  add rsp, 8
+.Lcccccc6:
+  lea rax, [rbp-6]
+  push rax
+  push 5
+  pop rdi
+  pop rax
+  imul rdi, 1
+  add rax, rdi
+  push rax
+  push 0  ...'\0'
+  pop rdi
+  pop rax
+  mov [rax], dil
+  push rdi
+  add rsp, 8
+
+  lea rax, [rbp-6]
+  push rax
+  push 1
+  pop rdi
+  pop rax
+  imul rdi, 1
+  add rax, rdi
+  push rax
+  pop rax
+  movsx rax, byte ptr [rax]
+  push rax
+  pop rax
+  jmp .Lreturn.main
+.Lreturn.main:
+  mov rsp, rbp
+  pop rbp
+  ret
 
 
 ```//斜体をブロック
