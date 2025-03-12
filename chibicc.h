@@ -6,6 +6,7 @@
 #include<stdbool.h>
 #include<string.h>
 #include<errno.h>
+#include<limits.h>
 
 
 typedef struct Type Type;

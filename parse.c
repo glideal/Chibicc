@@ -764,7 +764,7 @@ Initializer*new_init_label(Initializer*cur, char*label){
 //     char r;
 // }x;
 //
-//   |_|...1 byte
+//  |_|...1 byte
 //
 //16|_|      =align_to(end,ty->align)...size_of
 //  |_|
@@ -800,56 +800,49 @@ Initializer*emit_struct_padding(Initializer*cur,Type*parent,Member*mem){
 Initializer*gvar_initializer(Initializer*cur,Type*ty){
     Token*tok=token;
 
-    if(consume("{")){
+    if(ty->kind==TY_ARRAY){
+        bool open=consume("{");
+        int i=0;
+        int limit=ty->is_incomplete ? INT_MAX : ty->array_size ;
 
-        //配列
-        //int num[3]={1,2,3};
-        if(ty->kind==TY_ARRAY){
-            int i=0;
+        do{
+            cur=gvar_initializer(cur,ty->base);
+            i++;
+        }while(i<limit && !peek_end() && consume(","));
+        if(open) expect_end();
+        //set excess array elements to zero
+        cur=new_init_zero(cur,size_of(ty->base,tok)*(ty->array_size-i));
 
-            do{
-                cur=gvar_initializer(cur,ty->base);
-                i++;
-            }while(!peek_end()&&consume(","));
-            expect_end();
-
-            //set excess array elemments to zero
-            if(i<ty->array_size){
-                int nbytes=size_of(ty->base,tok)*(ty->array_size-i);
-                cur=new_init_zero(cur,nbytes);
-            }
-
-            //int num[];
-            if(ty->is_incomplete){
-                ty->array_size=i;
-                ty->is_incomplete=false;
-            }
-            return cur;
+        if(ty->is_incomplete){
+            ty->array_size=i;
+            ty->is_incomplete=false;
         }
-
-        //構造体
-        //struct{int num; char*str;}={2,"foo"};
-        if(ty->kind==TY_STRUCT){
-            Member*mem=ty->members;
-            do{
-                cur=gvar_initializer(cur,mem->ty);
-                cur=emit_struct_padding(cur,ty,mem);
-                mem=mem->next;
-            }while(!peek_end()&&consume(","));
-            expect_end();
-
-            //set excess struct elements to zero
-            if(mem){
-                int sz=size_of(ty,tok)-mem->offset;
-                if(sz>0) cur=new_init_zero(cur,sz);
-            }
-            return cur;
-        }
-
-        error_tok(tok,"invalid initializer");
+        return cur;
     }
 
+    if(ty->kind==TY_STRUCT){
+        bool open=consume("{");
+        Member*mem=ty->members;
+
+        do{
+            cur=gvar_initializer(cur,mem->ty);
+            cur=emit_struct_padding(cur,ty,mem);
+            mem=mem->next;
+        }while(mem && !peek_end() && consume(","));
+        if(open) expect_end();
+        //set excess struct elements to zero
+        if(mem){
+            int sz=size_of(ty,tok)-mem->offset;
+            if(sz) cur=new_init_zero(cur,sz);
+        }
+
+        return cur;
+    }
+
+    //char*g15={"foo"};
+    bool open=consume("{");
     Node*expr=conditional();//代入式の右辺
+    if(open) expect("}");
 
     if(expr->kind==ND_ADDR){
         if(expr->lhs->kind!=ND_VAR)error_tok(tok,"invalid initializer");
@@ -994,25 +987,6 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
             return cur;
         }
 
-    Token*tok=consume("{");
-    if(!tok){
-        /*
-        cur=|1|
-            |1|...|1|_|_|_|
-        */
-        cur->next=new_desg_node(var,desg,assign());
-        /*
-        cur=|1|
-            |1|...|1|_|_|_|->next=|2|...|2|_|_|_|
-        */
-        return cur->next;//curに返す
-        /*
-        cur=|2|
-            |1|...|1|_|_|_|->next=|2|...|2|_|_|_|        
-            
-        リストの先頭アドレスはdeclarationのheadが保存している
-        */
-    }
     //initialize array variable
     if(ty->kind==TY_ARRAY){
         /*
@@ -1023,7 +997,9 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
                     ->array_size...3
                 ->array_size...2
         */
+        bool open=consume("{");
         int i=0;
+        int limit=ty->is_incomplete ? INT_MAX : ty->array_size ;
 
         do{
             Designator desg2={desg,i++,NULL};
@@ -1068,9 +1044,9 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
                 //  ->next=cur-2
                 //          ->next ...
             */
-        }while(!peek_end()&&consume(","));
+        }while(i<limit&&!peek_end()&&consume(","));
 
-        expect_end();
+        if(open) expect_end();
 
         //set excess array elements to zero.
         /*
@@ -1087,17 +1063,18 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
         }
 
         return cur;
-    }
+    }//ty->kind==TY_ARRAY
 
     if(ty->kind==TY_STRUCT){
+        bool open=consume("{");
         Member*mem=ty->members;
         do{
             Designator desg2={desg,0,mem};
             cur=lvar_initializer(cur,var,mem->ty,&desg2);
             mem=mem->next;
-        }while(!peek_end()&&consume(","));
+        }while(mem&&!peek_end()&&consume(","));
 
-        expect_end();
+        if(open) expect_end();
 
         //set excess struct elements to zero
         for(;mem;mem=mem->next){
@@ -1108,7 +1085,11 @@ Node*lvar_initializer(Node*cur,Var*var,Type*ty,Designator*desg){
         return cur;
     }
 
-    error_tok(tok,"invalid array initializer");
+    //char*str={"foo"};
+    bool open=consume("{");
+    cur->next=new_desg_node(var,desg,assign());
+    if(open) expect("}");
+    return cur->next;
 }
 
 //declaration=type-specifier declarator type-suffix ("=" expr)?";"
