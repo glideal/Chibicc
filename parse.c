@@ -514,7 +514,8 @@ Type*struct_decl(){
       |_|
      4|_|<-x.num
       |_|
-      |_|<-x.q
+      |_|
+     1|_|<-x.q
      0|_|<-x.p <-x
 
      size_of関数でおいてstruct型は以下のような返り値(最後２行)
@@ -530,7 +531,9 @@ Type*struct_decl(){
         mem->offset=offset;
         offset+=size_of(mem->ty,mem->tok);
 
+        //ty->align に型のサイズのうち最大のものを格納する
         if(ty->align < mem->ty->align){//ty->alignはcallocで0に初期化されてる
+            //mem->ty->alignはnew_type()でセットされる。 mem->ty->alignは型のサイズ
             ty->align=mem->ty->align;
         }
     }
@@ -737,6 +740,13 @@ Initializer*new_init_val(Initializer*cur,int sz,int val){
     return init;
 }
 
+Initializer*new_init_zero(Initializer*cur,int nbytes){
+    for(int i=0;i<nbytes;i++){
+        cur=new_init_val(cur,1,0);
+    }
+    return cur;
+}
+
 Initializer*new_init_label(Initializer*cur, char*label){
     Initializer*init=calloc(1,sizeof(Initializer));
     init->label=label;
@@ -744,10 +754,101 @@ Initializer*new_init_label(Initializer*cur, char*label){
     return init;
 }
 
+//構造体の初期化
+//構造体のメンバーの同士の間を0で埋める
+// struct{
+//     char p;
+//     char q;
+//     int num;
+//     int val;
+//     char r;
+// }x;
+//
+//   |_|...1 byte
+//
+//16|_|      =align_to(end,ty->align)...size_of
+//  |_|
+//  |_|
+//  |_|      =end...size_of
+//12|_|<-x.r =mem->offset()...struct_decl
+//  |_|
+//  |_|
+//  |_|
+// 8|_|<-x.val (略)
+//  |_|<-x.num(4th byte)
+//  |_|<-x.num(3rd byte)
+//  |_|<-x.num(2nd byte)
+// 4|_|<-x.num(1st byte)
+//  |_|...0
+//  |_|...0
+// 1|_|<-x.q
+// 0|_|<-x.p <-x
+Initializer*emit_struct_padding(Initializer*cur,Type*parent,Member*mem){
+    int end=mem->offset+size_of(mem->ty,token);
+    int padding; //綿, 詰め物
+
+    if(mem->next)padding=mem->next->offset-end;
+    else padding=size_of(parent,token)-end;
+
+    if(padding>0)cur=new_init_zero(cur,padding);
+
+    return cur;
+}
+
 //global変数の右辺に変数は来ないらしい。。。 変数のアドレスは来るのに。。。
 //これは変数の中身は動的に決定するが、その変数のアドレスはコンパイル時に設定されるからだろうか
 Initializer*gvar_initializer(Initializer*cur,Type*ty){
     Token*tok=token;
+
+    if(consume("{")){
+
+        //配列
+        //int num[3]={1,2,3};
+        if(ty->kind==TY_ARRAY){
+            int i=0;
+
+            do{
+                cur=gvar_initializer(cur,ty->base);
+                i++;
+            }while(!peek_end()&&consume(","));
+            expect_end();
+
+            //set excess array elemments to zero
+            if(i<ty->array_size){
+                int nbytes=size_of(ty->base,tok)*(ty->array_size-i);
+                cur=new_init_zero(cur,nbytes);
+            }
+
+            //int num[];
+            if(ty->is_incomplete){
+                ty->array_size=i;
+                ty->is_incomplete=false;
+            }
+            return cur;
+        }
+
+        //構造体
+        //struct{int num; char*str;}={2,"foo"};
+        if(ty->kind==TY_STRUCT){
+            Member*mem=ty->members;
+            do{
+                cur=gvar_initializer(cur,mem->ty);
+                cur=emit_struct_padding(cur,ty,mem);
+                mem=mem->next;
+            }while(!peek_end()&&consume(","));
+            expect_end();
+
+            //set excess struct elements to zero
+            if(mem){
+                int sz=size_of(ty,tok)-mem->offset;
+                if(sz>0) cur=new_init_zero(cur,sz);
+            }
+            return cur;
+        }
+
+        error_tok(tok,"invalid initializer");
+    }
+
     Node*expr=conditional();//代入式の右辺
 
     if(expr->kind==ND_ADDR){
@@ -759,6 +860,7 @@ Initializer*gvar_initializer(Initializer*cur,Type*ty){
     if(expr->kind==ND_VAR
         &&expr->var->ty->kind==TY_ARRAY) 
         return new_init_label(cur,expr->var->name);
+
 
     return new_init_val(cur,size_of(ty,token),eval(expr));
 }

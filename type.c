@@ -17,6 +17,8 @@ bはn+align-1のxbit目より上位のbitを反映させるためのもの。
 
 まとめるとalign_toはalignの倍数のうち、n以上のものの中で最小の数を返す関数。
 ただし、alignは2のべき乗
+
+n を align に切り上げる
 */
 int align_to(int n,int align){
     return (n+align-1)& ~(align-1);//~...not演算子 //~(1011)=(0100)
