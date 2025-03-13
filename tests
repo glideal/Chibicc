@@ -111,6 +111,8 @@ int inc(){
 
 int param_decay(int x[]){ return x[0]; }
 
+static int static_fn(void){}
+
 int main(){
     
     assert(9,({int a=3;int z=6;a+z;}),"int a=3;int z=6; a+z;");
