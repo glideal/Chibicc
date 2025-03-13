@@ -632,6 +632,9 @@ VarList*read_func_params(){
     if(consume(")")){
         return NULL;
     }
+    Token*tok=token;
+    if(consume("void")&&consume(")")) return NULL;
+    token=tok;
 
     VarList head;
     head.next=NULL;
@@ -647,7 +650,7 @@ VarList*read_func_params(){
 }
 
 //function=type-specifier declarator "(" params? ")" ( "{" stmt* "}" | ";" )
-//params  =param("," param)*
+//params  =param("," param)* | "void"
 //param   =type-specifier declarator type-suffix
 Function*function(){
     //printf("program\n");

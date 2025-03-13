@@ -101,7 +101,7 @@ long power_of_2(long n){
 }
 
 char char_fn();
-void void_fn(){}
+void void_fn(void){}
 
 int inc(){
     static int num;
