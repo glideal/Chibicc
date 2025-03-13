@@ -29,6 +29,13 @@ char g17[]  ="foobar";
 char g18[10]="foobar";
 char g19[3] ="foobar";
 
+char *g20=g17+0;
+char *g21=g17+3;
+char *g22=g17-3;
+int g23=3;
+//int g23_2=g23; //ダメ
+int *g24=&g23;
+
 int assert(long expected,long actual,char*code){
     if(expected==actual){
         printf("%s => %ld\n",code,actual);
@@ -121,13 +128,13 @@ int main(){
         num[0].b+num[1].b+num[2].b;
     }),
     "
-        struct {int a;int b;}num[3];
-        int i;
-        for(i=0;i<3;i=i+1){
-            num[i].a=i;
-            num[i].b=i+100;
-        }
-        num[0].b+num[1].b+num[2].b;"
+struct {int a;int b;}num[3];
+int i;
+for(i=0;i<3;i=i+1){
+    num[i].a=i;
+    num[i].b=i+100;
+}
+num[0].b+num[1].b+num[2].b;"
     );
 
     assert(16,({
@@ -140,14 +147,15 @@ int main(){
         }x;
         sizeof x;
     }),"
-        struct{
-            char p;
-            char q;
-            int num;
-            int val;
-            char r;
-        }x;
-        sizeof x;");
+struct{
+    char p;
+    char q;
+    int num;
+    int val;
+    char r;
+}x;
+sizeof x;
+    ");
     
     //現時点ではポインタ同士の演算はダメ(type.c)
     //assert(15,({int x;char p;&p-&x;}),"int x;char p;int a=&x;int b=&p;b-a;");
@@ -511,12 +519,27 @@ a;");
     */
     //assert(3,({int num[2]={1,2,3}; num[2]; }),"num[2]={1,2,3}; num[2]; ");
 
+    // char g17[]  ="foobar";
+    // char g18[10]="foobar";
+    // char g19[3] ="foobar";
     assert( 7,sizeof(g17),"sizeof(g17)");
     assert(10,sizeof(g18),"sizeof(g18)");
     assert( 3,sizeof(g19),"sizeof(g19)");
     assert(0,memcmp(g17,"foobar",7),"memcmp(g17,\"foobar\",7)");
     assert(0,memcmp(g18,"foobar\0\0\0",10),"memcmp(g17,\"foobar\\0\\0\\0\",10)");
     assert(0,memcmp(g19,"foo",3),"memcmp(g17,\"foo\",3)");
+    
+    // char *g20=g17+0;
+    // char *g21=g17+3;
+    // char *g22=g17-3;
+    // int g23=3;
+    // int g23_2=g23; //ダメ
+    // int *g24=&g23;
+    assert(0,strcmp(g20,"foobar")   ,"strcmp(g20,\"foobar\")");
+    assert(0,strcmp(g21,"bar")      ,"strcmp(g21,\"bar\")");
+    assert(0,strcmp(g22+3,"foobar") ,"strcmp(g22+3,\"foobar\")");
+    assert(3,g23,"g23");
+    assert(3,*g24,"*g24");
 
     printf("ok\n");
     return 0;

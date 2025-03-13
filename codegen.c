@@ -667,7 +667,7 @@ void emit_data(Program*prog){
 
         for(Initializer*init=var->initializer;init;init=init->next){
             if(init->label){
-                printf("  .quad %s\n",init->label);// .8byte
+                printf("  .quad %s%+ld\n",init->label,init->addend);// .8byte //+ は符号を書く指定子
                 continue;
             }
             if(init->sz==1) printf("  .byte %ld\n",init->val);

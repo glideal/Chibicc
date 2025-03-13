@@ -185,6 +185,7 @@ struct Initializer{
     long val;
     //reference to another global variables
     char*label;
+    long addend;
 };
 
 //function definition
